@@ -1,0 +1,332 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block title %}Edit {{ property.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    {% if is_resubmission %}
+    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
+        <div class="flex">
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800">Property Revision Required</h3>
+                <p class="text-sm text-yellow-700 mt-1">Reason: <span class="font-semibold">{{ property.rejection_reason }}</span></p>
+                <p class="text-sm text-yellow-700 mt-2">Please update your listing and resubmit for review.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">{% if is_resubmission %}Revise Property{% else %}Edit Property{% endif %}</h1>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <form method="POST" enctype="multipart/form-data" class="p-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- LEFT COLUMN -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Property Title *</label>
+                        <input type="text" name="title" value="{{ form.title.value|default:property.title }}" class="form-input" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Property Type *</label>
+                        <select name="property_type" class="form-input" required>
+                            {% for value, label in form.fields.property_type.choices %}
+                                <option value="{{ value }}" {% if form.property_type.value|default:property.property_type == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Monthly Rent (ETB) *</label>
+                        <input type="number" name="price" value="{{ form.price.value|default:property.price }}" class="form-input" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                        <select name="location" class="form-input" required>
+                            {% for value, label in form.fields.location.choices %}
+                                <option value="{{ value }}" {% if form.location.value|default:property.location == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bedrooms *</label>
+                        <input type="number" name="bedrooms" value="{{ form.bedrooms.value|default:property.bedrooms }}" class="form-input" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bathrooms *</label>
+                        <input type="number" name="bathrooms" value="{{ form.bathrooms.value|default:property.bathrooms }}" class="form-input" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Area (m²)</label>
+                        <input type="number" name="area" value="{{ form.area.value|default:property.area }}" class="form-input">
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_available" id="is_available" class="h-4 w-4 text-primary border-gray-300 rounded" 
+                               {% if form.is_available.value|default:property.is_available %}checked{% endif %}>
+                        <label for="is_available" class="ml-2 text-sm text-gray-700">Property is available</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AMENITIES SECTION -->
+            <div class="mt-6 pt-6 border-t">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">💡 Property Features & Amenities</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="is_furnished" id="is_furnished" class="h-4 w-4 text-primary border-gray-300 rounded" 
+                                   {% if form.is_furnished.value|default:property.is_furnished %}checked{% endif %}>
+                            <label for="is_furnished" class="ml-2 text-sm text-gray-700">🛋️ Fully Furnished</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="has_parking" id="has_parking" class="h-4 w-4 text-primary border-gray-300 rounded" 
+                                   {% if form.has_parking.value|default:property.has_parking %}checked{% endif %}>
+                            <label for="has_parking" class="ml-2 text-sm text-gray-700">🅿️ Parking Space</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="has_balcony" id="has_balcony" class="h-4 w-4 text-primary border-gray-300 rounded" 
+                                   {% if form.has_balcony.value|default:property.has_balcony %}checked{% endif %}>
+                            <label for="has_balcony" class="ml-2 text-sm text-gray-700">🌆 Balcony</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="has_security" id="has_security" class="h-4 w-4 text-primary border-gray-300 rounded" 
+                                   {% if form.has_security.value|default:property.has_security %}checked{% endif %}>
+                            <label for="has_security" class="ml-2 text-sm text-gray-700">👮 Security Service</label>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="has_backup_generator" id="has_backup_generator" class="h-4 w-4 text-primary border-gray-300 rounded" 
+                                   {% if form.has_backup_generator.value|default:property.has_backup_generator %}checked{% endif %}>
+                            <label for="has_backup_generator" class="ml-2 text-sm text-gray-700">⚡ Backup Generator</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="has_internet" id="has_internet" class="h-4 w-4 text-primary border-gray-300 rounded" 
+                                   {% if form.has_internet.value|default:property.has_internet %}checked{% endif %}>
+                            <label for="has_internet" class="ml-2 text-sm text-gray-700">🌐 Internet Ready</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="pet_friendly" id="pet_friendly" class="h-4 w-4 text-primary border-gray-300 rounded" 
+                                   {% if form.pet_friendly.value|default:property.pet_friendly %}checked{% endif %}>
+                            <label for="pet_friendly" class="ml-2 text-sm text-gray-700">🐕 Pet Friendly</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                <textarea name="description" rows="4" class="form-input" required>{{ form.description.value|default:property.description }}</textarea>
+            </div>
+
+            <!-- EXISTING IMAGES (Keep your existing image upload JS code here) -->
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Current Images</label>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {% for image in property.images.all %}
+                    <div class="relative">
+                        <img src="{{ image.image.url }}" class="w-full h-32 object-cover rounded-md">
+                        {% if image.is_primary %}<span class="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-1 rounded">Primary</span>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- NEW IMAGES -->
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Add More Images (Optional)</label>
+                <input type="file" name="images" multiple class="form-input" accept="image/*">
+            </div>
+
+            <!-- SUBMIT -->
+            <div class="mt-8 pt-6 border-t flex justify-end space-x-4">
+                <a href="{% url 'detail_view' property.id %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-green-800">
+                    {% if is_resubmission %}Resubmit Property{% else %}Save Changes{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-input {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent;
+}
+</style>
+
+<script>
+const propertyId = {{ property.id }};
+const csrfToken = "{{ csrf_token }}";
+
+// Elements
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const progressContainer = document.getElementById('progressContainer');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+const uploadError = document.getElementById('uploadError');
+const uploadedPreview = document.getElementById('uploadedPreview');
+const imagesGrid = document.getElementById('imagesGrid');
+
+
+
+// Click drop zone to select files
+dropZone.addEventListener('click', () => fileInput.click());
+
+// Drag & drop
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-primary', 'bg-blue-50');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-primary', 'bg-blue-50');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-primary', 'bg-blue-50');
+    if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+});
+
+// File selected
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) uploadFiles(e.target.files);
+});
+
+// Upload files
+function uploadFiles(files) {
+    uploadError.classList.add('hidden');
+    const currentCount = document.querySelectorAll('#imagesGrid > div').length;
+    
+    if (currentCount + files.length > 5) {
+        showError(`Maximum 5 images. You have ${currentCount}.`);
+        return;
+    }
+    
+    progressContainer.classList.remove('hidden');
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+    
+    const formData = new FormData();
+    for (let file of files) formData.append('images', file);
+    
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percent + '%';
+            progressText.textContent = percent + '%';
+        }
+    };
+    
+    xhr.onload = () => {
+        progressContainer.classList.add('hidden');
+        
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            
+            if (response.success) {
+                fileInput.value = '';
+                response.images.forEach(img => addImage(img));
+                showMessage('Images added!');
+            } else {
+                showError(response.error);
+            }
+        } else {
+            showError('Upload failed');
+        }
+    };
+    
+    xhr.open('POST', `/properties/${propertyId}/upload-image/`);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.setRequestHeader('X-CSRFToken', csrfToken);
+    xhr.send(formData);
+}
+
+// Add image to DOM
+function addImage(img) {
+    const imgDiv = document.createElement('div');
+    imgDiv.className = 'relative group';
+    imgDiv.id = `image-${img.id}`;
+    imgDiv.innerHTML = `
+        <img src="${img.url}" class="w-full h-32 object-cover rounded-md">
+        ${img.is_primary ? '<span class="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-1 rounded">Primary</span>' : ''}
+        <button type="button" onclick="deleteImage(${img.id})" 
+                class="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100">
+            <i class="fas fa-times text-xs"></i>
+        </button>
+    `;
+    uploadedPreview.appendChild(imgDiv);
+    imagesGrid.appendChild(imgDiv.cloneNode(true));
+}
+
+// Delete image
+function deleteImage(imageId) {
+    if (!confirm('Delete this image?')) return;
+    
+    // Find ALL elements with this image ID
+    const elements = document.querySelectorAll(`[id="image-${imageId}"]`);
+    
+    // Visual fade out
+    elements.forEach(el => {
+        el.style.opacity = '0.3';
+        el.style.transition = 'opacity 0.3s';
+    });
+    
+    // Delete from backend
+    fetch(`/properties/image/delete/${imageId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Remove ALL after animation
+            setTimeout(() => {
+                elements.forEach(el => el.remove());
+                showMessage('Image deleted');
+            }, 300);
+        } else {
+            // Restore if failed
+            elements.forEach(el => el.style.opacity = '1');
+            showError('Delete failed');
+        }
+    });
+}
+// Helpers
+function showError(msg) {
+    uploadError.textContent = msg;
+    uploadError.classList.remove('hidden');
+}
+
+function showMessage(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 px-4 py-2 rounded-md text-white bg-green-500 z-50';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+</script>
+{% endblock %}

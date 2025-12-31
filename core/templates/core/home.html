@@ -1,0 +1,274 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block title %} Home {% endblock %}
+
+{% block content %}
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-primary to-green-700 text-white py-16">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h2 class="text-4xl font-bold mb-4">Find Your Perfect Home in Ethiopia</h2>
+                    <p class="text-xl mb-6">Connecting landlords and renters across Addis Ababa and beyond</p>
+                    <div class="flex">
+                        <p class="px-6 py-3 bg-secondary text-dark font-semibold ">List a Property if your're Landlord</p>
+                        <p class="px-6 py-3 bg-white text-primary font-semibold ">Find a Rental if your're Tenant</p>
+                    </div>
+                </div>
+                <div class="md:w-1/2">
+                    <div class="bg-white rounded-lg shadow-xl p-4 text-dark">
+                        <h3 class="text-xl font-semibold mb-4 text-primary">Search Properties</h3>
+                        <form method="GET" 
+                              hx-get="{% url 'search_ajax' %}" 
+                              hx-target="#searchResults" 
+                              hx-trigger="change delay:500ms"
+                              hx-indicator="#loadingIndicator">
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Location</label>
+                                <select name="site_location" class="w-full p-3 border border-gray-300 rounded">
+                                    <option value="">Any Location</option>
+                                    <option value="Arabsa">Arabsa</option>
+                                    <option value="Bulbula">Bulbula</option>
+                                    <option value="Bole">Bole</option>
+                                    <option value="Koye Feche">Koye Feche</option>
+                                    <option value="Abado">Abado</option>
+                                    <option value="Gelan">Gelan</option>
+                                    <option value="Lideta">Lideta</option>
+                                    <option value="Semit">Semit</option>
+
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Property Type</label>
+                                    <select name="property_type" class="w-full p-3 border border-gray-300 rounded">
+                                        <option value="">Any Type</option>
+                                        <option value="Apartment">Apartment</option>
+                                        <option value="Villa">Villa</option>
+                                        <option value="Condominium">Condominium</option>
+                                        <option value="Traditional House">Traditional House</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Price Range</label>
+                                    <select name="price_range" class="w-full p-3 border border-gray-300 rounded">
+                                        <option value="">Any Price</option>
+                                        <option value="0-5000">Under 5,000 ETB</option>
+                                        <option value="5000-10000">5,000 - 10,000 ETB</option>
+                                        <option value="10000-20000">10,000 - 20,000 ETB</option>
+                                        <option value="20000+">20,000+ ETB</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-primary text-white py-3 rounded font-semibold hover:bg-green-800">Search Properties</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="htmx-indicator flex justify-center my-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <span class="ml-3 text-gray-700">Loading results...</span>
+    </div>
+
+    <!-- Search Results Container -->
+    <div id="searchResults">
+        <!-- Initial content will be replaced by search results -->
+        
+        <!-- Featured Properties -->
+        <section class="py-16">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center mb-12 text-dark">Featured Properties</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {% if featured_properties %}
+                    {% for property in featured_properties %}
+                        <!-- Property Card -->
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow">
+                            <div class="h-48 bg-gray-200 relative" 
+                                style="background-image: url('{% if property.get_primary_image %}{{ property.get_primary_image }}{% else %}/static/images/placeholder.jpg{% endif %}'); background-size: cover; background-position: center;">
+                                <div class="absolute top-4 right-4 z-10">
+                                    <button onclick="toggleFavorite({{ property.id }}, this)" 
+                                            class="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white">
+                                        <i class="{% if property.is_favorited %}fas text-red-500{% else %}far text-gray-600{% endif %} fa-heart"></i>
+                                    </button>
+                                </div>
+                                <span class="absolute top-4 left-4 bg-secondary text-dark px-3 py-1 rounded font-semibold">
+                                    Featured
+                                </span>
+                                <div class="absolute bottom-4 right-4 bg-primary text-white px-3 py-1 rounded">
+                                    {{ property.price }} ETB/month
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-sm text-gray-500 px-6 pt-2">
+                                <span><i class="fas fa-eye mr-1"></i> {{ property.get_view_count }}</span>
+                                <span><i class="fas fa-heart mr-1"></i> {{ property.get_save_count }}</span>
+                                <span><i class="fas fa-star mr-1"></i> {{ property.average_rating|floatformat:1 }}({{ property.review_count }})</span>
+                                <span>{{ property.created_at|timesince }}</span>
+                            </div>
+                            <div class="p-6">
+                                <h3 class="text-xl font-semibold mb-2">{{ property.title }}</h3>
+                                <p class="text-gray-600 mb-4">
+                                    <i class="fas fa-map-marker-alt text-primary mr-2"></i>{{ property.get_location_display }}
+                                </p>
+                                <div class="flex justify-between text-sm text-gray-500 mb-4">
+                                    <span><i class="fas fa-bed text-primary mr-1"></i> {{ property.bedrooms }} Bedrooms</span>
+                                    <span><i class="fas fa-bath text-primary mr-1"></i> {{ property.bathrooms }} Bathrooms</span>
+                                    <span><i class="fas fa-ruler-combined text-primary mr-1"></i> {{ property.area }}m²</span>
+                                </div>
+                                <a href="{% url 'detail_view' property.id %}" class="">
+                                <button class="w-full bg-primary text-white py-2 rounded font-semibold hover:bg-green-800">
+                                    View Details
+                                </button>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    {% else %}
+                        <p class="text-xl font-semibold text-center">No Featured Property!</p>
+                    {% endif %}
+                </div>
+
+                <!-- all property display section -->
+                <section id="all_property_view" class="hidden">
+                    <h2 class="text-3xl font-bold text-center mb-12 text-dark">All Properties</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {% if all_properties %}
+                    {% for property in all_properties %}
+                        <!-- Property Card -->
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow">
+                            <div class="h-48 bg-gray-200 relative" 
+                                style="background-image: url('{% if property.get_primary_image %}{{ property.get_primary_image }}{% else %}/static/images/placeholder.jpg{% endif %}'); background-size: cover; background-position: center;">
+                                <div class="absolute top-4 right-4 z-10">
+                                    <button onclick="toggleFavorite({{ property.id }}, this)" 
+                                            class="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white">
+                                        <i class="{% if property.is_favorited %}fas text-red-500{% else %}far text-gray-600{% endif %} fa-heart"></i>
+                                    </button>
+                                </div>
+                                <div class="absolute bottom-4 right-4 bg-primary text-white px-3 py-1 rounded">
+                                    {{ property.price }} ETB/month
+                                </div>
+            
+                            </div>
+                            <div class="flex justify-between text-sm text-gray-500 px-6 pt-2">
+                                <span><i class="fas fa-eye mr-1"></i> {{ property.get_view_count }}</span>
+                                <span><i class="fas fa-heart mr-1"></i> {{ property.get_save_count }}</span>
+                                <span><i class="fas fa-star mr-1"></i> {{ property.average_rating|floatformat:1 }}({{ property.review_count }})</span>
+                                <span>{{ property.created_at|timesince }}</span>
+                            </div>
+                            <div class="p-6">
+                                <h3 class="text-xl font-semibold mb-2">{{ property.title }}</h3>
+                                <p class="text-gray-600 mb-4">
+                                    <i class="fas fa-map-marker-alt text-primary mr-2"></i>{{ property.get_location_display }}
+                                </p>
+                                <div class="flex justify-between text-sm text-gray-500 mb-4">
+                                    <span><i class="fas fa-bed text-primary mr-1"></i> {{ property.bedrooms }} Bedrooms</span>
+                                    <span><i class="fas fa-bath text-primary mr-1"></i> {{ property.bathrooms }} Bathrooms</span>
+                                    <span><i class="fas fa-ruler-combined text-primary mr-1"></i> {{ property.area }}m²</span>
+                                </div>
+                                <a href="{% url 'detail_view' property.id %}" class="">
+                                <button class="w-full bg-primary text-white py-2 rounded font-semibold hover:bg-green-800">
+                                    View Details
+                                </button>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    {% else %}
+                        <p class="text-xl font-semibold text-center">No Property!</p>
+                    {% endif %}
+                    </div>
+                </section>
+
+            <div class="text-center mt-12">
+                <button id="all_property_btn" class="px-6 py-3 border-2 border-primary text-primary font-semibold rounded hover:bg-primary hover:text-white">
+                    View All Properties
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- How It Works -->
+    <section id="how" class="py-16 bg-gray-100">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12 text-dark">How Yebet Kiray Works</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow text-center">
+                    <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">1</div>
+                    <h3 class="text-xl font-semibold mb-4">List Your Property</h3>
+                    <p class="text-gray-600">Landlords can easily list properties with photos, descriptions, and pricing details.</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow text-center">
+                    <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">2</div>
+                    <h3 class="text-xl font-semibold mb-4">Find Your Home</h3>
+                    <p class="text-gray-600">Renters can search by location, price, and property type to find their perfect home.</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow text-center">
+                    <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">3</div>
+                    <h3 class="text-xl font-semibold mb-4">Connect & Agree</h3>
+                    <p class="text-gray-600">Landlords and renters connect directly to discuss details and finalize agreements.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12 text-dark">What Our Users Say</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-gray-300 rounded-full mr-4"></div>
+                        <div>
+                            <h4 class="font-semibold">Alemayehu Teka</h4>
+                            <p class="text-gray-600">Landlord in Addis Ababa</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"Yebet Kiray made it so easy to find quality tenants for my apartment. I listed my property and had serious inquiries within hours!"</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-gray-300 rounded-full mr-4"></div>
+                        <div>
+                            <h4 class="font-semibold">Sara Mengistu</h4>
+                            <p class="text-gray-600">Renter in Bole</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">"I found my perfect apartment through Yebet Kiray. The search filters made it easy to find exactly what I was looking for in my price range."</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="py-16 bg-primary text-white">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-6">Ready to Find or List a Property?</h2>
+            <p class="text-xl mb-8 max-w-2xl mx-auto">Join thousands of Ethiopians who are using Yebet Kiray to find their perfect home or ideal tenant.</p>
+            <div class="flex flex-col sm:flex-row justify-center sm:space-y-0">
+                <p class="px-8 py-3 bg-secondary text-dark font-semibold ">List Your Property if you're Landlord</p>
+                <p class="px-8 py-3 bg-white text-primary font-semibold  ">Browse Rentals if you're Tenant</p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const allBtn = document.getElementById('all_property_btn');
+        const propertyDisplay = document.getElementById('all_property_view');
+        allBtn.addEventListener('click', function(){
+            propertyDisplay.classList.toggle('hidden');
+        });
+        
+    </script>
+
+{% endblock %}

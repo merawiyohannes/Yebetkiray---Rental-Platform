@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %} {% endblock %} | Find Your Perfect Rental in Ethiopia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2d5016',
+                        secondary: '#e9b949',
+                        accent: '#8a5081',
+                        light: '#f5f5f5',
+                        dark: '#333333',
+                    }
+                }
+            }
+        }
+
+        // Mobile menu toggle - FIXED FOR ALL SCREENS
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+            
+            // Close when clicking outside (for all screens)
+            if (!menu.classList.contains('hidden')) {
+                setTimeout(() => {
+                    document.addEventListener('click', function closeMenu(e) {
+                        if (!menu.contains(e.target) && !e.target.closest('[onclick="toggleMobileMenu()"]')) {
+                            menu.classList.add('hidden');
+                            document.removeEventListener('click', closeMenu);
+                        }
+                    });
+                }, 100);
+            }
+        }
+
+        // Toggle notification dropdown
+        function toggleNotificationDropdown(event) {
+            event.preventDefault();
+            event.stopPropagation(); // Prevent closing when clicking bell
+            
+            const dropdown = event.currentTarget.nextElementSibling;
+            if (dropdown && dropdown.classList.contains('notification-dropdown')) {
+                dropdown.classList.toggle('hidden');
+                
+                // Close other dropdowns
+                document.querySelectorAll('.notification-dropdown').forEach(otherDropdown => {
+                    if (otherDropdown !== dropdown) {
+                        otherDropdown.classList.add('hidden');
+                    }
+                });
+                
+                // Close when clicking outside
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => {
+                        document.addEventListener('click', function closeDropdown(e) {
+                            if (!dropdown.contains(e.target) && !e.target.closest('.notification-bell')) {
+                                dropdown.classList.add('hidden');
+                                document.removeEventListener('click', closeDropdown);
+                            }
+                        });
+                    }, 100);
+                }
+            }
+        }
+    </script>
+    <style>
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            border-color: #2d5016;
+            box-shadow: 0 0 0 2px rgba(45, 80, 22, 0.2);
+        }
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        /* Mobile menu for all screens */
+        #mobile-menu {
+            transition: all 0.3s ease-in-out;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            z-index: 50;
+            width: 300px;
+            background: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        @media (min-width: 768px) {
+            #mobile-menu {
+                width: 350px;
+            }
+        }
+        
+        /* Notification dropdown styling */
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            z-index: 50;
+        }
+        
+        /* Prevent list dots */
+        ul, ol {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    {% if 'analytics' not in request.path %}
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md relative">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-primary">Yebet Kiray</h1>
+                    <span class="ml-2 text-secondary font-semibold">የቤት ኪራይ</span>
+                </div>
+                
+                <!-- Desktop Menu - Always visible -->
+                <div class="hidden md:flex space-x-8">
+                    <a href="{% url 'home_view' %}" class="text-dark {% if request.path == '/' %} text-gray-400 {% else %} hover:underline {% endif %} transition">Home</a>
+                    {% if request.path == '/' %}
+                        <a href="#how" class="text-dark hover:text-primary hover:underline transition">How It Works</a>
+                    {% endif %}
+                </div>
+                
+                <!-- Desktop Auth Buttons - Always visible -->
+                <div class="flex items-center space-x-4">
+                    {% if request.user.is_authenticated %}
+                        <!-- Debug info - Small on mobile -->
+                        <div class="text-xs text-green-500 hidden sm:block">
+                            {{ request.user.userrole.user_type }}
+                        </div>
+                        
+                        {% load messaging_tags %}  
+                        <!-- BELL: Notifications -->
+                        <div class="relative">
+                            <a href="#" 
+                            class="flex items-center px-3 py-2 text-gray-700 hover:text-primary notification-bell {% if request.path == '/messages' %} underline {% endif %}"
+                            onclick="toggleNotificationDropdown(event)">
+                                <i class="fas fa-bell text-lg"></i>
+                            </a>
+                            {% notification_dropdown %}
+                        </div>
+                        
+                        <!-- ENVELOPE: Messages -->
+                        <div class="relative">
+                            <a href="{% url 'inbox_view' %}" 
+                            class="flex items-center px-3 py-2 text-gray-700 hover:text-primary message-envelope {% if request.path == '/messages/' %} underline {% endif %}">
+                                <i class="fas fa-envelope text-lg"></i>
+                            </a>
+                        </div>
+                        
+                    {% else %}
+                        <!-- Login/Signup buttons -->
+                        <a href="{% url 'login_view' %}" class="hidden md:block">
+                            <button class="px-4 py-2 text-dark hover:text-primary transition">Log in</button>
+                        </a>
+                        <a href="{% url 'signup_view' %}" class="hidden md:block">
+                            <button class="px-4 py-2 bg-primary text-white rounded hover:bg-green-800 transition">Sign Up</button>
+                        </a>
+                    {% endif %}
+                    
+                    <!-- BURGER MENU BUTTON - ALWAYS VISIBLE -->
+                    <button class="text-dark" onclick="toggleMobileMenu()">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Dropdown - Shows when burger clicked -->
+            <div id="mobile-menu" class="hidden absolute right-0 top-full w-80 bg-white shadow-2xl border border-gray-200 z-50">
+                <div class="p-4">
+                    <div class="space-y-3">
+                        <!-- Home -->
+                        <a href="{% url 'home_view' %}" class="block py-2 px-3 hover:bg-gray-200 rounded text-dark hover:text-primary transition">
+                            <i class="fas fa-home mr-3"></i> Home
+                        </a>
+                        
+                        {% if request.path == '/' %}
+                        <!-- How It Works -->
+                        <a href="#how" class="block py-2 px-3 hover:bg-gray-200 rounded text-dark hover:text-primary transition">
+                            <i class="fas fa-info-circle mr-3"></i> How It Works
+                        </a>
+                        {% endif %}
+                        
+                        {% if request.user.is_authenticated %}
+                            <!-- User Info -->
+                            <div class="py-2 px-3 bg-gray-100 rounded">
+                                <p class="font-semibold">{{ request.user.get_full_name|default:request.user.username }}</p>
+                                <p class="text-sm text-gray-600">{{ request.user.userrole.get_user_type_display }}</p>
+                            </div>
+                            
+                            <!-- Dashboard -->
+                            <a href="{% if request.user.is_superuser %}{% url 'admin_dashboard' %} {% else %} {% url 'dashboard_view' %} {% endif %}" 
+                            class="block py-2 px-3 hover:bg-gray-200 rounded text-dark hover:text-primary transition">
+                                <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+                            </a>
+                            
+                        
+                            
+                            {% if request.user.is_staff %}
+                            <!-- Admin Verify -->
+                            <a href="{% url 'admin_verify' %}" 
+                            class="block py-2 px-3 hover:bg-gray-200 rounded text-dark hover:text-primary transition">
+                                <i class="fas fa-shield-alt mr-3"></i> Verify Properties
+                            </a>
+                            {% endif %}
+                            
+                            <!-- Logout -->
+                            <div class="border-t border-gray-200 pt-3">
+                                <form method="POST" action="{% url 'logout_view' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-full text-left py-2 px-3 text-white bg-red-500 hover:bg-red-700 rounded transition flex items-center">
+                                        <i class="fas fa-sign-out-alt mr-3"></i> Log out
+                                    </button>
+                                </form>
+                            </div>
+                            
+                        {% else %}
+                            <!-- Guest menu items -->
+                            <div class="space-y-3 border-t border-gray-200 pt-4">
+                                <a href="{% url 'login_view' %}" class="block py-2 px-3 hover:bg-gray-200 rounded text-dark hover:text-primary transition">
+                                    <i class="fas fa-sign-in-alt mr-3"></i> Log in
+                                </a>
+                                <a href="{% url 'signup_view' %}">
+                                    <button class="w-full py-2 px-3 bg-primary text-white rounded hover:bg-green-800 transition flex items-center justify-center">
+                                        <i class="fas fa-user-plus mr-3"></i> Sign Up
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    {% if messages %}
+    <div class="fixed top-4 right-4 z-50 w-96 space-y-2">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} p-4 rounded-lg shadow-lg border-l-4 
+                    {% if message.tags == 'success' %}bg-green-100 border-green-500 text-green-700
+                    {% elif message.tags == 'error' %}bg-red-100 border-red-500 text-red-700
+                    {% elif message.tags == 'warning' %}bg-yellow-100 border-yellow-500 text-yellow-700
+                    {% else %}bg-blue-100 border-blue-500 text-blue-700{% endif %}">
+            <div class="flex justify-between items-start">
+                <div class="flex items-center">
+                    {% if message.tags == 'success' %}
+                    <i class="fas fa-check-circle mr-2"></i>
+                    {% elif message.tags == 'error' %}
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    {% elif message.tags == 'warning' %}
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    {% else %}
+                    <i class="fas fa-info-circle mr-2"></i>
+                    {% endif %}
+                    {{ message }}
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" 
+                        class="ml-4 text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+<script>
+    // Auto-remove messages after 5 seconds
+    setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 300);
+        });
+    }, 20000);
+</script>
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+
+    {% if 'analytics' not in request.path %}
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Yebet Kiray</h3>
+                    <p class="text-gray-400">Ethiopia's premier rental platform connecting landlords and tenants.</p>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Home</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Contact Us</h4>
+                    <ul class="space-y-2">
+                        <li class="text-gray-400 hover:text-white"><i class="fas fa-phone-alt mr-2"></i> <a href="tel:" class="">+251 921 540 245</a></li>
+                        <li class="text-gray-400"><i class="fas fa-map-marker-alt mr-2"></i> Addis Ababa, Ethiopia</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2023 Yebet Kiray. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    {% endif %}
+
+<script>
+
+    function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+    document.addEventListener('DOMContentLoaded',async function updateMessageUnreadCount() {
+            try {
+                // Fetch notifications from your API
+                console.log('try fetching messages count')
+                const response = await fetch('/messages/api/unread-message-count/');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const unreadMessageCount = data.unread_messages;
+                    console.log(data)
+                    console.log(`unreadmessages=${unreadMessageCount}`)
+                    updateMessageCount(unreadMessageCount)
+                    console.log('the function called')
+                }
+            } catch (error) {
+                console.log('get message count api failed')
+                console.error('Failed to update count:', error);
+                
+            }
+            
+        });
+
+    async function refreshAndUpdateCount() {
+        try {
+            const response = await fetch('/messages/api/notifications/');
+            const data = await response.json();
+            const unread = data.notifications.filter(n => !n.is_read).length;
+            updateNotificationCount(unread);
+        } catch (error) {
+            console.log('Error:', error);
+        }
+        
+        // Call itself after 2 seconds
+        setTimeout(refreshAndUpdateCount, 2000);
+    }
+    async function refreshAndUpdateMessageCount() {
+        try {
+            const response = await fetch('/messages/api/unread-message-count/'); // FIX URL
+            const data = await response.json();
+            const unreadMessageCount = data.unread_messages; // FIX variable name
+            updateMessageCount(unreadMessageCount);
+        } catch (error) {
+            console.log('Error:', error);
+        }
+        
+        // Call itself after 5 seconds
+        setTimeout(refreshAndUpdateMessageCount, 5000);
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        refreshAndUpdateCount();        // Starts 2-second loop
+        refreshAndUpdateMessageCount(); // Starts 5-second loop
+    });
+                
+    // Function to update unread count in envelope
+    function updateMessageCount(count) {
+    const envelope = document.querySelector('.message-envelope');
+    if (!envelope) return;
+    
+    // Remove existing badge
+    const existingBadge = envelope.querySelector('.bg-red-500');
+    if (existingBadge) existingBadge.remove();
+    
+    // Add new badge if count > 0
+    if (count > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center';
+        badge.textContent = count > 99 ? '99+' : count;
+        envelope.appendChild(badge);
+    }
+    }
+    
+
+    // Update the bell badge count from API
+    document.addEventListener('DOMContentLoaded',async function updateUnreadCount() {
+        try {
+            // Fetch notifications from your API
+            console.log('try fetching noti count')
+            const response = await fetch('/messages/api/notifications/');
+            
+            if (response.ok) {
+                const data = await response.json();
+                const notifications = data.notifications || [];
+                const unreadCount = notifications.filter(notif => !notif.is_read).length;
+                console.log(unreadCount)
+                updateNotificationCount(unreadCount)
+                console.log('the function called')
+            }
+        } catch (error) {
+            console.log('get notifications api failed')
+            console.error('Failed to update count:', error);
+            
+        }
+        
+    });
+
+    // Function to update unread count in bell
+    function updateNotificationCount(count) {
+    const bell = document.querySelector('.notification-bell');
+    if (!bell) return;
+    
+    // Remove existing badge
+    const existingBadge = bell.querySelector('.bg-red-500');
+    if (existingBadge) existingBadge.remove();
+    
+    // Add new badge if count > 0
+    if (count > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center';
+        badge.textContent = count > 99 ? '99+' : count;
+        bell.appendChild(badge);
+    }
+    }
+
+    // Function to mark a single notification as read
+    async function markNotificationAsRead(notificationId) {
+        try {
+            const response = await fetch(`/messages/api/notifications/mark-read/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    // Update UI
+                    const notificationItem = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                    if (notificationItem) {
+                        notificationItem.classList.remove('bg-blue-100');
+                        const dot = notificationItem.querySelector('.bg-blue-500');
+                        if (dot) dot.remove();
+                    }
+                    return true;
+                }
+            }
+            return false;
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            return false;
+        }
+    }
+
+    // Function to mark ALL notifications as read
+    async function markAllNotificationsAsRead() {
+        try {
+            // Show loading state
+            const button = document.querySelector('button[onclick="markAllNotificationsAsRead()"]');
+            if (button) {
+                button.classList.add('opacity-50');
+            }
+            
+            const response = await fetch('/messages/api/notifications/mark-all-read/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Update ALL notification items
+                document.querySelectorAll('.notification-item').forEach(item => {
+                    item.classList.remove('bg-blue-100')
+                });
+                
+                document.querySelectorAll('.dot_indicator').forEach(item  =>{
+                    item.remove()
+                });
+
+                refreshAndUpdateCount()
+                // Show success
+                showToast(data.message || 'All notifications marked as read', 'success');
+            } else {
+                showToast('Failed to mark notifications as read', 'error');
+            }
+            
+        } catch (error) {
+            showToast('An error occurred', 'error');
+        } finally {
+            // Restore button
+            const button = document.querySelector('button[onclick="markAllNotificationsAsRead()"]');
+            if (button) {
+                button.disabled = false;
+                button.textContent = 'All marked as read';
+                button.classList.add('text-green-500');
+            }
+        }
+    }
+
+        
+
+    // Toast notification helper
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white transition-all duration-300 ${
+            type === 'success' ? 'bg-green-500' : 
+            type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+        }`;
+        toast.textContent = message;
+        toast.style.animation = 'slideInRight 0.3s ease-out';
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Toggle notification dropdown
+    function toggleNotificationDropdown(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Find the dropdown relative to the clicked bell
+        const bell = event.currentTarget;
+        const parentDiv = bell.closest('.relative');
+        const dropdown = parentDiv.querySelector('.notification-dropdown');
+        
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+            
+            // Close other dropdowns if any
+            document.querySelectorAll('.notification-dropdown').forEach(otherDropdown => {
+                if (otherDropdown !== dropdown && !otherDropdown.classList.contains('hidden')) {
+                    otherDropdown.classList.add('hidden');
+                }
+            });
+        }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.notification-dropdown') && !event.target.closest('.notification-bell')) {
+            document.querySelectorAll('.notification-dropdown').forEach(dropdown => {
+                dropdown.classList.add('hidden');
+            });
+        }
+    });  
+    
+    function toggleFavorite(propertyId, buttonElement) {
+    const icon = buttonElement.querySelector('i');
+    
+    fetch(`/accounts/${propertyId}/favorite/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'  // This tells Django it's AJAX
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Toggle heart icon
+            if (data.is_favorited) {
+                icon.classList.remove('far', 'text-gray-600');
+                icon.classList.add('fas', 'text-red-500');
+            } else {
+                icon.classList.remove('fas', 'text-red-500');
+                icon.classList.add('far', 'text-gray-600');
+            }
+        }
+        console.log('liked tooggled')
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+
+<style>
+    #notification-toast {
+        animation: slideInRight 0.3s ease-out;
+        transition: opacity 0.3s, transform 0.3s;
+    }
+    
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+</style>
+</body>
+</html>

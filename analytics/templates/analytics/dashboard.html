@@ -1,0 +1,1022 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - YebetKiray{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen">
+    <!-- LEFT SIDEBAR: SaaS Dashboard Navigation -->
+    <div class="w-64 bg-gradient-to-b from-gray-50 to-white border-r border-gray-400 py-6 px-4 hidden md:block">
+        <!-- User Profile Card -->
+        <div class="mb-8 p-4 bg-gray-300 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center mb-4">
+                {% if request.user.userrole.profile_picture %}
+                <img src="{{ request.user.userrole.profile_picture.url }}" 
+                     alt="Profile"
+                     class="w-12 h-12 rounded-full object-cover border-2 border-primary mr-3">
+                {% else %}
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-green-600 flex items-center justify-center text-white font-bold text-lg mr-3">
+                    {{ request.user.first_name|first }}{{ request.user.last_name|first }}
+                </div>
+                {% endif %}
+                <div>
+                    <h3 class="font-bold text-gray-900">{{ request.user.get_short_name|default:request.user.username }}</h3>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        {{ request.user.userrole.get_user_type_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="space-y-3">
+                {% if request.user.userrole.user_type == 'landlord' %}
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Properties</span>
+                    <span class="font-bold">{{ properties_count }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Verified</span>
+                    <span class="font-bold text-green-600">{{ verified_count }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Total Views</span>
+                    <span class="font-bold text-yellow-600">{{ total_view }}</span>
+                </div>
+                {% else %}
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Saved</span>
+                    <span class="font-bold text-primary">{{ saved_count }}</span>
+                </div>
+                {% endif %}
+                
+            </div>
+        </div>
+        
+        <!-- Navigation Menu -->
+        <nav class="space-y-1 mb-8">
+            <div class="text-xs text-gray-500 uppercase font-semibold tracking-wider px-3 mb-2">Navigation</div>
+            
+            <a href="{% url 'inbox_view' %}" 
+               class="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-700 hover:text-primary">
+                <i class="fas fa-comments w-5 mr-3"></i>
+                Conversations
+                {% if total_count > 0 %}
+                <span class="ml-auto bg-primary text-white text-xs px-2 py-0.5 rounded-full min-w-6 text-center">{{ total_count }}</span>
+                {% endif %}
+            </a>
+            
+            {% if request.user.userrole.user_type == 'landlord' %}
+            <a href="{% url 'property_create_view' %}" 
+               class="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-700 hover:text-primary">
+                <i class="fas fa-plus-circle w-5 mr-3"></i>
+                Add Property
+            </a>
+            {% else %}
+            <a onclick="showSection('saved')" 
+               class="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-700 hover:text-primary cursor-pointer">
+                <i class="fas fa-bookmark w-5 mr-3"></i>
+                Saved Properties
+                {% if saved_count > 0 %}
+                <span class="ml-auto bg-primary text-white text-xs px-2 py-0.5 rounded-full min-w-6 text-center">{{ saved_count }}</span>
+                {% endif %}
+            </a>
+            {% endif %}
+            
+            <!-- Admin Only -->
+            {% if request.user.is_staff or request.user.is_superuser %}
+            <div class="pt-4 mt-4 border-t border-gray-200">
+                <div class="text-xs text-gray-500 uppercase font-semibold tracking-wider px-3 mb-2">Admin</div>
+                <a href="{% url 'admin_verify' %}" 
+                   class="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-700 hover:text-primary">
+                    <i class="fas fa-shield-alt w-5 mr-3"></i>
+                    Verify Properties
+                    {% if pending_count > 0 %}
+                    <span class="ml-auto bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full min-w-6 text-center">{{ pending_count }}</span>
+                    {% endif %}
+                </a>
+            </div>
+            {% endif %}
+        </nav>
+        
+        <!-- Quick Actions -->
+        <div class="mb-8">
+            <div class="text-xs text-gray-500 uppercase font-semibold tracking-wider px-3 mb-2">Quick Actions</div>
+            <div class="space-y-2">
+                <a href="{% url 'edit_view' %}" 
+                   class="flex items-center px-3 py-2 text-sm bg-gray-50 hover:bg-gray-300 rounded-lg transition-colors text-gray-700">
+                    <i class="fas fa-user-edit w-4 mr-2"></i>
+                    Edit Profile
+                </a>
+                <a href="{% url 'home_view' %}" 
+                   class="flex items-center px-3 py-2 text-sm bg-gray-50 hover:bg-gray-300 rounded-lg transition-colors text-gray-700">
+                    <i class="fas fa-search w-4 mr-2"></i>
+                    Browse Properties
+                </a>
+                <div class="">
+                    <form method="POST" action="{% url 'logout_view' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full text-left py-2 px-3 text-white bg-red-500 hover:bg-red-700 rounded transition flex items-center">
+                            <i class="fas fa-sign-out-alt mr-3"></i> Log out
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Completion -->
+        {% if profile_completion < 100 %}
+        <div class="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+            <div class="flex items-center mb-2">
+                <i class="fas fa-trophy text-yellow-600 mr-2"></i>
+                <span class="text-sm font-medium text-gray-900">Complete Your Profile</span>
+            </div>
+            <div class="mb-2">
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="text-gray-600">{{ profile_completion }}% Complete</span>
+                    <span class="font-medium">{{ profile_completion }}/100</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                    <div class="bg-yellow-500 h-1.5 rounded-full" style="width: {{ profile_completion }}%"></div>
+                </div>
+            </div>
+            <a href="{% url 'edit_view' %}" 
+               class="text-xs text-primary hover:underline font-medium">
+                Complete now →
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- MAIN CONTENT AREA (Your Existing Dashboard) -->
+    <div class="flex-1 bg-gray-50">
+        <div class="container mx-auto px-4 py-8">
+            <!-- Profile Header (Keep your original) -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="flex flex-col md:flex-row items-center">
+                    <!-- Your original profile header code here -->
+                    <div class="relative w-24 h-24 rounded-full overflow-hidden border-4 border-primary mr-0 md:mr-6 mb-4 md:mb-0">
+                        {% if request.user.userrole.profile_picture %}
+                            <img src="{{ request.user.userrole.profile_picture.url }}" alt="Profile" class="w-full h-full object-cover">
+                        {% else %}
+                            <div class="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <span class="text-3xl font-bold text-primary">
+                                    {{ request.user.first_name|first }}{{ request.user.last_name|first }}
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex-1 text-center md:text-left">
+                        <h1 class="text-2xl font-bold text-gray-900">Welcome back, {{ request.user.get_full_name }}</h1>
+                        <p class="text-gray-600 mb-2">{{ request.user.email }}</p>
+                        
+                        <div class="flex flex-wrap justify-center md:justify-start gap-3 mt-3">
+                            <span class="px-4 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                                <i class="fas fa-user-tag mr-1"></i> 
+                                {{ request.user.userrole.get_user_type_display|title }}
+                            </span>
+                            
+                            {% if request.user.userrole.phone %}
+                            <span class="px-4 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                                <i class="fas fa-phone mr-1"></i> {{ request.user.userrole.phone }}
+                            </span>
+                            {% endif %}
+                            
+                            {% if request.user.userrole.is_verified %}
+                            <span class="px-4 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                                <i class="fas fa-check-circle mr-1"></i> Verified
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 md:mt-0 flex space-x-3">
+                        {% if request.user.userrole.user_type == 'landlord' %}
+                        <a href="{% url 'property_create_view' %}" 
+                           class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-green-800 flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Add Property
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Stats (Your original cards) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Clickable Stats Cards -->
+                {% if request.user.userrole.user_type == 'landlord' %}
+                <div onclick="showSection('properties')" 
+                     class="bg-white p-6 rounded-xl shadow cursor-pointer hover:shadow-lg transition-shadow border-2 border-transparent hover:border-primary active:bg-blue-50">
+                    <div class="flex items-center">
+                        <div class="rounded-full bg-blue-100 p-3 mr-4">
+                            <i class="fas fa-home text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">My Properties</p>
+                            <h3 class="text-2xl font-bold">{{ properties_count }}</h3>
+                            <div class="mt-2 text-xs">
+                                {% if verified_count > 0 %}
+                                <span class="text-green-600">
+                                    <i class="fas fa-check-circle"></i> {{ verified_count }} published
+                                </span>
+                                {% endif %}
+                                {% if pending_count > 0 %}
+                                <span class="text-yellow-800 ml-2">
+                                    <i class="fas fa-clock"></i> {{ pending_count }} pending
+                                </span>
+                                {% endif %}
+                                {% if rejected_count > 0 %}
+                                <span class="text-red-800 ml-2">
+                                    <i class="fas fa-circle-xmark"></i> {{ rejected_count }} rejected
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif request.user.userrole.user_type == 'renter' %}
+                <div onclick="showSection('recent')" 
+                     class="bg-white p-6 rounded-xl shadow cursor-pointer hover:shadow-lg transition-shadow border-2 border-transparent hover:border-blue-500 active:bg-blue-50">
+                    <div class="flex items-center">
+                        <div class="rounded-full bg-blue-100 p-3 mr-4">
+                            <i class="fas fa-clock text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Recently Viewed</p>
+                            <h3 class="text-2xl font-bold">{{ recently_viewed|length|default:"0" }}</h3>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div onclick="showSection('messages')" 
+                     class="bg-white p-6 rounded-xl shadow cursor-pointer hover:shadow-lg transition-shadow border-2 border-transparent hover:border-green-500 active:bg-green-50">
+                    <div class="flex items-center">
+                        <div class="rounded-full bg-green-100 p-3 mr-4">
+                            <i class="fas fa-envelope text-green-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Total Conversations</p>
+                            <h3 class="text-2xl font-bold">{{ total_count }}</h3>
+                            <p class="text-gray-600">Unread Messages </p>
+                            <h3 class="text-2xl font-bold">{{ messages_count }}</h3>
+                            
+                        </div>
+                    </div>
+                </div>
+                
+                {% if request.user.userrole.user_type == 'landlord' %}
+                <div onclick="showSection('notification')" 
+                     class="bg-white p-6 rounded-xl shadow cursor-pointer hover:shadow-lg transition-shadow border-2 border-transparent hover:border-purple-500 active:bg-purple-50">
+                    <div class="flex items-center">
+                        <div class="rounded-full bg-purple-100 p-3 mr-4">
+                            <i class="fas fa-bell text-yellow-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Notifications</p>
+                            <h3 class="text-2xl font-bold">{% if total_notifications|length > 99 %} 99+ {% else %} {{ total_notifications|length|default:"0" }} {% endif %}</h3>
+                            <p class="text-gray-600">Unread</p>
+                            <h3 class="text-2xl font-bold">{{ unread_notifications|length|default:"0" }}</h3>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div onclick="showSection('saved')" 
+                     class="bg-white p-6 rounded-xl shadow cursor-pointer hover:shadow-lg transition-shadow border-2 border-transparent hover:border-yellow-500 active:bg-yellow-50">
+                    <div class="flex items-center">
+                        <div class="rounded-full bg-yellow-100 p-3 mr-4">
+                            <i class="fas fa-bookmark text-yellow-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Saved Properties</p>
+                            <h3 class="text-2xl font-bold">{{ saved_count|default:"0" }}</h3>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Dynamic Content Sections (Your original tabbed property cards) -->
+            <div id="contentSections" class="space-y-8">
+                <!-- Properties Section (Default) - KEEP YOUR TABBED VERSION -->
+                {% if request.user.userrole.user_type == 'landlord' %}
+
+                <div id="propertiesSection" class="bg-white rounded-xl shadow-lg ">
+                    <div class="px-6 py-4 border-b">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            My Properties
+                        </h2>
+                    </div>
+                    
+                    <!-- Property Status Tabs -->
+                    <div class="border-b">
+                        <div class="flex overflow-x-auto">
+                            <button onclick="showPropertyTab('all')" 
+                                    class="property-tab active-tab px-4 py-3 font-medium text-gray-700 border-b-2 border-primary whitespace-nowrap">
+                                <i class="fas fa-layer-group mr-2"></i>
+                                All Properties ({{ properties_count }})
+                            </button>
+                            
+                            {% if verified_count > 0 %}
+                            <button onclick="showPropertyTab('verified')" 
+                                    class="property-tab px-4 py-3 font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap">
+                                <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                                Verified ({{ verified_count }})
+                            </button>
+                            {% endif %}
+                            
+                            {% if pending_count > 0 %}
+                            <button onclick="showPropertyTab('pending')" 
+                                    class="property-tab px-4 py-3 font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap">
+                                <i class="fas fa-clock mr-2 text-yellow-500"></i>
+                                Pending ({{ pending_count }})
+                            </button>
+                            {% endif %}
+                            
+                            {% if rejected_count > 0 %}
+                            <button onclick="showPropertyTab('rejected')" 
+                                    class="property-tab px-4 py-3 font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap">
+                                <i class="fas fa-times-circle mr-2 text-red-500"></i>
+                                Rejected ({{ rejected_count }})
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Tab Content -->
+                    <div class="p-6">
+                        <!-- All Properties and Tab (Default) -->
+                        <div id="allPropertiesTab" class="property-tab-content">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {% for property in user_properties %}
+                                {% include 'analytics/property_mini_card.html' %}
+                                {% empty %}
+                                <div class="col-span-full text-center py-12">
+                                    <div class="text-6xl mb-4">🏠</div>
+                                    <p class="text-xl text-gray-600">No properties yet</p>
+                                    <p class="text-gray-500 mb-6">Start by adding your first property</p>
+                                    <a href="{% url 'property_create_view' %}" 
+                                       class="inline-block px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-green-800">
+                                        <i class="fas fa-plus mr-2"></i> Add Property
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Verified Properties Tab -->
+                        {% if verified_count > 0 %}
+                        <div id="verifiedPropertiesTab" class="property-tab-content hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {% for property in user_properties %}
+                                    {% if property.is_verified %}
+                                    {% include 'analytics/property_mini_card.html' %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Pending Properties Tab -->
+                        {% if pending_count > 0 %}
+                        <div id="pendingPropertiesTab" class="property-tab-content hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {% for property in user_properties %}
+                                    {% if not property.is_verified and not property.is_rejected %}
+                                    {% include 'analytics/property_mini_card.html' %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Rejected Properties Tab -->
+                        {% if rejected_count > 0 %}
+                        <div id="rejectedPropertiesTab" class="property-tab-content hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {% for property in rejected_property %}
+                                {% include 'analytics/property_mini_card.html' %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% elif request.user.userrole.user_type == 'renter' %}
+                <!-- recently views section for renters only -->
+
+                <div id="recentSection" class="bg-white rounded-xl shadow-lg ">
+                    {% if recently_viewed %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for property in recently_viewed %}
+                        <!-- Property Card - Smaller version -->
+                        <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
+                            <div class="h-32 bg-gray-200 relative" 
+                                style="background-image: url('{% if property.get_primary_image %}{{ property.get_primary_image }}{% else %}/static/images/placeholder.jpg{% endif %}'); background-size: cover; background-position: center;">
+                                <div class="absolute top-2 right-2 z-10">
+                                    <button onclick="toggleFavorite({{ property.id }}, this)" 
+                                            class="w-6 h-6 bg-white/80 rounded-full flex items-center justify-center hover:bg-white">
+                                        <i class="{% if property.is_favorited %}fas text-red-500{% else %}far text-gray-600{% endif %} fa-heart text-sm"></i>
+                                    </button>
+                                </div>
+                                <div class="absolute bottom-2 right-2 bg-primary text-white px-2 py-1 rounded text-xs">
+                                    {{ property.price }} ETB
+                                </div>
+                            </div>
+                            
+                            <div class="p-3">
+                                <h3 class="font-semibold text-sm mb-1 truncate">{{ property.title }}</h3>
+                                <p class="text-xs text-gray-600 mb-2">
+                                    <i class="fas fa-map-marker-alt text-primary mr-1"></i>{{ property.get_location_display|truncatechars:30 }}
+                                </p>
+                                <div class="flex justify-between text-xs text-gray-500 mb-2">
+                                    <span><i class="fas fa-bed text-primary mr-1"></i>{{ property.bedrooms }}</span>
+                                    <span><i class="fas fa-bath text-primary mr-1"></i>{{ property.bathrooms }}</span>
+                                    <span><i class="fas fa-ruler-combined text-primary mr-1"></i>{{ property.area }}m²</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500 mb-3">
+                                    <span><i class="fas fa-eye mr-1"></i>{{ property.get_view_count }}</span>
+                                    <span><i class="fas fa-heart mr-1"></i>{{ property.get_save_count }}</span>
+                                    <span>{{ property.created_at|timesince }}</span>
+                                </div>
+                                <a href="{% url 'detail_view' property.id %}" class="block">
+                                    <button class="w-full bg-primary text-white py-1 rounded text-xs font-medium hover:bg-green-800">
+                                        View Details
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-clock text-3xl text-gray-500 mb-3"></i>
+                        <p class="text-gray-700">No recent activity yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <!-- Messages Section (Hidden by default) -->
+                <div id="messagesSection" class="bg-white rounded-xl shadow-lg hidden">
+                    <div class="container mx-auto px-4 py-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-comments text-primary mr-2"></i>Messages
+                            </h1>
+                            <div class="flex items-center space-x-4">
+                                {% if total_unread > 0 %}
+                                <span id="totalUnreadBadge" class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                                    <i class="fas fa-bell mr-1"></i>{{ total_unread }} unread
+                                </span>
+                                {% else %}
+                                <span id="totalUnreadBadge" class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium hidden">
+                                    <i class="fas fa-bell mr-1"></i>0 unread
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Main messaging layout -->
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden flex" style="height: 70vh;">
+                            <!-- Left: Conversation List -->
+                            <div id="conversationList" class="w-full md:w-1/3 border-r border-gray-200 overflow-y-auto bg-gray-50">
+                                <!-- Search/Filter Bar -->
+                                <div class="p-3 border-b border-gray-200 bg-white">
+                                    <div class="relative">
+                                        <input type="text" 
+                                            placeholder="Search conversations..."
+                                            class="w-full bg-gray-100 rounded-lg px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white">
+                                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                    </div>
+                                </div>
+                                
+                                <!-- Conversations List -->
+                                <div class="divide-y divide-gray-200">
+                                    {% for conv in conversations %}
+                                    {% with other_user=conv.get_other_participant.request.user %}
+                                    <a href="{% url 'conversation_view' conv.id %}" 
+                                    class="conversation-item block p-3 hover:bg-white transition-all duration-200 {% if active_conversation and active_conversation.id == conv.id %}bg-white border-r-3 border-primary shadow-sm{% endif %}"
+                                    data-conversation-id="{{ conv.id }}">
+                                        <div class="flex items-start">
+                                            <!-- Profile Picture -->
+                                            <div class="relative mr-3 flex-shrink-0">
+                                                {% if other_user.userrole.profile_picture %}
+                                                <img src="{{ other_user.userrole.profile_picture.url }}" 
+                                                    alt="{{ other_user.get_full_name }}"
+                                                    class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">
+                                                {% else %}
+                                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg border-2 border-white shadow-sm">
+                                                    {{ other_user.first_name|first }}{{ other_user.last_name|first }}
+                                                </div>
+                                                {% endif %}
+                                                <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                            </div>
+                                            
+                                            <!-- Conversation Details -->
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex justify-between items-start mb-1">
+                                                    <h4 class="font-semibold text-gray-900 truncate">
+                                                        {{ other_user.get_full_name }}
+                                                    </h4>
+                                                    <span class="text-xs text-gray-500 flex-shrink-0 ml-2">
+                                                        {{ conv.updated_at|timesince }} ago
+                                                    </span>
+                                                </div>
+                                                
+                                                <div class="flex items-center mb-1">
+                                                    <span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded mr-2">
+                                                        <i class="fas fa-home text-xs mr-1"></i>{{ conv.property.get_location_display }}
+                                                    </span>
+                                                    <span class="text-xs font-medium text-primary">
+                                                        {{ conv.property.price }} ETB
+                                                    </span>
+                                                </div>
+                                                
+                                                <div class="flex items-center">
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-sm text-gray-600 truncate">
+                                                            {% with last_msg=conv.messages.last %}
+                                                                {% if last_msg %}
+                                                                    {% if last_msg.sender == request.user %}
+                                                                        <span class="text-gray-500 font-medium">You: </span>
+                                                                    {% endif %}
+                                                                    {% if last_msg.attachment %}
+                                                                        <i class="fas fa-paperclip text-xs mr-1"></i>Attachment
+                                                                    {% else %}
+                                                                        {{ last_msg.content|truncatechars:35 }}
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-gray-400 italic">No messages yet</span>
+                                                                {% endif %}
+                                                            {% endwith %}
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    {% if conv.unread_count > 0 %}
+                                                    <span class="unread-badge ml-2 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+                                                        {{ conv.unread_count }}
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    {% endwith %}
+                                    {% empty %}
+                                    <div class="p-8 text-center">
+                                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center mx-auto mb-4">
+                                            <i class="fas fa-comments text-3xl text-blue-400"></i>
+                                        </div>
+                                        <h3 class="text-lg font-medium text-gray-900 mb-2">No conversations</h3>
+                                        <p class="text-gray-600 text-sm mb-4">Start a conversation from any property page</p>
+                                        <a href="{% url 'home_view' %}" 
+                                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-green-800 text-sm font-medium">
+                                            <i class="fas fa-search mr-2"></i> Browse Properties
+                                        </a>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Right: Message Thread OR Default View -->
+                            <div id="rightPanel" class="hidden md:flex md:w-2/3 flex-col">
+                                <div id="messageThread" class="flex-1 flex flex-col"></div>
+                                
+                                <div id="defaultView" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-gray-50 to-white">
+                                    <div class="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-6">
+                                        <i class="fas fa-comments text-4xl text-primary"></i>
+                                    </div>
+                                    <h3 class="text-xl font-bold text-gray-900 mb-2">Select a conversation</h3>
+                                    <p class="text-gray-600 max-w-md mb-6">
+                                        Choose a conversation from the list to view messages or start a new one from any property page.
+                                    </p>
+                                   
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Section -->
+                 {% if request.user.userrole.user_type == 'landlord' %}
+                <div id="notificationSection" class="bg-white rounded-xl shadow-lg hidden">
+                    <div class="px-6 py-4 border-b flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-bell text-yellow-600 mr-2"></i> All Notifications
+                        </h2>
+                        <div class="flex items-center space-x-3">
+                            {% if unread_notifications %}
+                            <button onclick="markAllNotificationsAsRead()" 
+                                    class="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-lg transition-colors">
+                                <i class="fas fa-check-double mr-1"></i> Mark all read
+                            </button>
+                            {% endif %}
+                            <button onclick="showSection('properties')" 
+                                    class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 max-h-[70vh] overflow-y-auto">
+                        {% if total_notifications %}
+                        <div class="space-y-2">
+                            {% for notification in total_notifications %}
+                            <div class="group flex items-start p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 
+                                    {% if not notification.is_read %}bg-blue-50 border border-blue-100{% else %}border border-gray-100{% endif %}"
+                                data-notification-id="{{ notification.id }}">
+                                
+                                <!-- Main Content - Clickable Link -->
+                                <a href="{{ notification.get_link|default:'#' }}" 
+                                class="flex-1 flex items-start no-underline"
+                                onclick="markNotificationAsRead({{ notification.id }})">
+                                    
+                                    <!-- Icon -->
+                                    <div class="mr-3 mt-1 flex-shrink-0">
+                                        {% if notification.notification_type == 'property_view' %}
+                                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <i class="fas fa-eye text-blue-600"></i>
+                                        </div>
+                                        {% elif notification.notification_type == 'property_inquiry' %}
+                                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                            <i class="fas fa-question text-green-600"></i>
+                                        </div>
+                                        {% elif notification.notification_type == 'property_saved' %}
+                                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                                            <i class="fas fa-heart text-red-600"></i>
+                                        </div>
+                                        {% elif notification.notification_type == 'featured_upgrade' %}
+                                        <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                            <i class="fas fa-crown text-purple-600"></i>
+                                        </div>
+                                        {% elif notification.notification_type == 'verification' %}
+                                        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                                            <i class="fas fa-shield-check text-yellow-600"></i>
+                                        </div>
+                                        {% else %}
+                                        <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                            <i class="fas fa-bell text-gray-600"></i>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if not notification.is_read %}
+                                        <div class="dot_indicator w-3 h-3 bg-blue-500 rounded-full absolute -top-1 -right-1 border-2 border-white"></div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Text Content -->
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-800 mb-1">{{ notification.message }}</p>
+                                        <div class="flex items-center">
+                                            <span class="text-xs text-gray-500">
+                                                {{ notification.created_at|timesince }} ago
+                                            </span>
+                                            {% if not notification.is_read %}
+                                            <span class="text-xs text-blue-600 font-medium ml-2">• Unread</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </a>
+                                
+                                <!-- Action Buttons (Right side) -->
+                                <div class="ml-3 flex items-center space-x-1 transition-opacity">
+                                    {% if not notification.is_read %}
+                                    <button onclick="markNotificationAsRead({{ notification.id }}, event)"
+                                            class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
+                                            title="Mark as read">
+                                        <i class="fas fa-check text-sm"></i>
+                                    </button>
+                                    {% endif %}
+                                    
+                                    <button onclick="deleteSingleNotification({{ notification.id }}, event)"
+                                            class="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                                            title="Delete">
+                                        <i class="fas fa-trash-alt text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-12">
+                            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-bell-slash text-2xl text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-600">No notifications yet</p>
+                        </div>
+
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Stats Footer -->
+                    <div class="px-6 py-3 border-t bg-gray-50 rounded-b-xl">
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span>Total: {{ total_notifications|length }}</span>
+                            <span class="text-blue-600">Unread: {{ unread_notifications|length }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Saved Section -->
+                 {% elif request.user.userrole.user_type == 'renter' %}
+                <div id="savedSection" class="bg-white  rounded-xl shadow-lg hidden">
+                {% if saved_properties %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for property in saved_properties %}
+                    <!-- Property Card - Smaller version -->
+                    <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
+                        <div class="h-32 bg-gray-200 relative" 
+                            style="background-image: url('{% if property.get_primary_image %}{{ property.get_primary_image }}{% else %}/static/images/placeholder.jpg{% endif %}'); background-size: cover; background-position: center;">
+                            <div class="absolute top-2 right-2 z-10">
+                                <button onclick="toggleFavorite({{ property.id }}, this)" 
+                                        class="w-6 h-6 bg-white/80 rounded-full flex items-center justify-center hover:bg-white">
+                                    <i class="{% if property.is_favorited %}fas text-red-500{% else %}far text-gray-600{% endif %} fa-heart text-sm"></i>
+                                </button>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-primary text-white px-2 py-1 rounded text-xs">
+                                {{ property.price }} ETB
+                            </div>
+                        </div>
+                        
+                        <div class="p-3">
+                            <h3 class="font-semibold text-sm mb-1 truncate">{{ property.title }}</h3>
+                            <p class="text-xs text-gray-600 mb-2">
+                                <i class="fas fa-map-marker-alt text-primary mr-1"></i>{{ property.get_location_display|truncatechars:30 }}
+                            </p>
+                            <div class="flex justify-between text-xs text-gray-500 mb-2">
+                                <span><i class="fas fa-bed text-primary mr-1"></i>{{ property.bedrooms }}</span>
+                                <span><i class="fas fa-bath text-primary mr-1"></i>{{ property.bathrooms }}</span>
+                                <span><i class="fas fa-ruler-combined text-primary mr-1"></i>{{ property.area }}m²</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-3">
+                                <span><i class="fas fa-eye mr-1"></i>{{ property.get_view_count }}</span>
+                                <span><i class="fas fa-heart mr-1"></i>{{ property.get_save_count }}</span>
+                                <span>{{ property.created_at|timesince }}</span>
+                            </div>
+                            <a href="{% url 'detail_view' property.id %}" class="block">
+                                <button class="w-full bg-primary text-white py-1 rounded text-xs font-medium hover:bg-green-800">
+                                    View Details
+                                </button>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-heart text-3xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">No saved properties yet</p>
+                    <p class="text-sm text-gray-400">Save properties by clicking the heart icon</p>
+                </div>
+                {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Menu Toggle Button -->
+<button id="mobileMenuToggle" 
+        class="md:hidden fixed bottom-4 right-4 z-50 w-12 h-12 bg-primary text-white rounded-full shadow-lg flex items-center justify-center">
+    <i class="fas fa-bars"></i>
+</button>
+
+<!-- Mobile Sidebar -->
+<div id="mobileSidebar" 
+     class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden">
+    <div class="absolute left-0 top-0 h-full w-64 bg-white shadow-xl">
+        <!-- Mobile sidebar content (same as desktop but with close button) -->
+        <div class="p-4">
+            <button id="mobileMenuClose" class="mb-4">
+                <i class="fas fa-times text-gray-600"></i>
+            </button>
+            <!-- Copy sidebar content here -->
+        </div>
+    </div>
+</div>
+
+<script>
+// Mobile menu toggle
+document.getElementById('mobileMenuToggle').addEventListener('click', function() {
+    document.getElementById('mobileSidebar').classList.remove('hidden');
+});
+
+document.getElementById('mobileMenuClose').addEventListener('click', function() {
+    document.getElementById('mobileSidebar').classList.add('hidden');
+});
+
+// Your existing tab switching functions
+let activeSection = '{% if request.user.userrole.user_type == "landlord" %}properties{% else %}recent{% endif %}';
+
+function showSection(section) {
+    // Hide all sections
+    document.getElementById('propertiesSection')?.classList.add('hidden');
+    document.getElementById('messagesSection')?.classList.add('hidden');
+    document.getElementById('notificationSection')?.classList.add('hidden');
+    document.getElementById('savedSection')?.classList.add('hidden');
+    document.getElementById('recentSection')?.classList.add('hidden');
+
+    
+    // Show selected section
+    document.getElementById(section + 'Section').classList.remove('hidden');
+    
+    activeSection = section;
+}
+
+// Property tab switching
+let activePropertyTab = 'all';
+
+function showPropertyTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.property-tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.property-tab').forEach(tab => {
+        tab.classList.remove('active-tab', 'text-gray-700', 'border-b-2', 'border-primary');
+        tab.classList.add('text-gray-500', 'hover:text-gray-700');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName + 'PropertiesTab').classList.remove('hidden');
+    
+    // Activate selected tab
+    const activeTab = document.querySelector(`[onclick="showPropertyTab('${tabName}')"]`);
+    if (activeTab) {
+        activeTab.classList.add('active-tab', 'text-gray-700', 'border-b-2', 'border-primary');
+        activeTab.classList.remove('text-gray-500', 'hover:text-gray-700');
+    }
+    
+    activePropertyTab = tabName;
+}
+</script>
+
+<!-- scripts for the messaging section -->
+ <script>
+    document.querySelectorAll('.conversation-item').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.href;
+            // Fetch and load conversation
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Update the message thread area
+                const rightPanel = document.getElementById('rightPanel');
+                if (rightPanel) {
+                    rightPanel.innerHTML = html;
+                    rightPanel.classList.remove('hidden');
+                    
+                    // Scroll to bottom after HTML is inserted
+                    setTimeout(() => {
+                        const messagesContainer = document.getElementById('messagesContainer');
+                        if (messagesContainer) {
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }
+                    }, 0.005);
+
+                    setTimeout(function() {
+                        const textarea = document.querySelector('textarea[name="content"]');
+                        if (textarea) {
+                            textarea.focus();
+                        }
+                    }, 0.005);
+                }
+                // Update URL
+                window.history.pushState({}, '', url);
+                
+                // Update active conversation highlight
+                document.querySelectorAll('.conversation-item').forEach(item => {
+                    item.classList.remove('bg-white', 'border-r-3', 'border-primary', 'shadow-sm');
+                });
+                this.classList.add('bg-white', 'border-r-3', 'border-primary', 'shadow-sm');
+            })
+            .catch(error => {
+                // Fallback to normal navigation
+                window.location.href = url;
+            });
+        });
+    });
+
+// Message sending AJAX
+document.addEventListener('submit', function(e) {
+    // Find the message form
+    const form = e.target;
+    if (form.tagName === 'FORM' && form.action.includes('/send/')) {
+        e.preventDefault(); // Stop normal form submission
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalContent = submitBtn.innerHTML;
+        // Show loading
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        submitBtn.disabled = true;
+    
+        // Get form data
+        const formData = new FormData(form);
+        
+        // Send AJAX request
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Clear textarea
+                form.querySelector('textarea').value = '';
+                
+                // Get conversation ID from action URL
+                const urlParts = form.action.split('/');
+                const conversationId = urlParts[urlParts.length - 2];
+                
+                // Reload conversation
+                fetch(`/messages/conversation/${conversationId}/`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    // Find and update message thread
+                    const messagesContainer = document.getElementById('messagesContainer');
+                    const formContainer = form.closest('.flex-1');
+                    
+                    if (messagesContainer && formContainer) {
+                        // Just update messages area and keep form
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newMessages = doc.getElementById('messagesContainer');
+                        
+                        if (newMessages) {
+                            messagesContainer.innerHTML = newMessages.innerHTML;
+                            
+                            // Scroll to bottom
+                            setTimeout(() => {
+                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            }, 0.005);
+                        }
+                    }
+                });
+            } else {
+                alert('Error: ' + (data.error || 'Failed to send'));
+            }
+            
+            // Reset button
+            submitBtn.innerHTML = originalContent;
+            submitBtn.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error');
+            submitBtn.innerHTML = originalContent;
+            submitBtn.disabled = false;
+        });
+    }
+});
+
+function attachmentDispaly(){
+    const input = document.getElementById('fileInput');
+    input.classList.remove('hidden');
+    input.click();
+}
+
+
+</script>
+
+<style>
+/* Tab Styles */
+.property-tab {
+    transition: all 0.2s ease;
+    position: relative;
+    border-bottom: 2px solid transparent;
+}
+
+.property-tab:hover {
+    background-color: #f9fafb;
+}
+
+.active-tab {
+    color: #111827;
+    border-bottom-color: #10b981 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

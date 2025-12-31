@@ -1,0 +1,512 @@
+{% extends "core/base.html" %}
+{% block title %}{{ property.title }} - YebetKiray{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-sans">
+  <!-- Breadcrumb -->
+  <nav class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-gray-600">
+      <li><a href="{% url 'home_view' %}" class="hover:text-primary transition-colors">Home</a></li>
+      <li><i class="fas fa-chevron-right text-xs"></i></li>
+      <li><a href="#" class="hover:text-primary transition-colors">Properties</a></li>
+      <li><i class="fas fa-chevron-right text-xs"></i></li>
+      <li class="text-gray-400 truncate max-w-xs">{{ property.title }}</li>
+    </ol>
+  </nav>
+
+  <div class="grid lg:grid-cols-3 gap-8">
+    <!-- Left Column - Property Details (2/3 width) -->
+    <div class="lg:col-span-2 space-y-8">
+      <!-- Image Gallery -->
+      <section class="space-y-4">
+        <div class="relative h-96 md:h-[500px] rounded-2xl overflow-hidden bg-gray-100 shadow-lg">
+          {% if property.get_primary_image %}
+            <img id="mainImage" src="{{ property.get_primary_image }}" 
+                 class="w-full h-full object-cover transition-opacity duration-300"
+                 alt="{{ property.title }}">
+            <div class="absolute top-4 right-4 z-10">
+              <button onclick="toggleFavorite({{ property.id }}, this)" 
+                      class="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white shadow-lg transition-all">
+                <i class="{% if property.is_favorited %}fas text-red-500{% else %}far text-gray-700{% endif %} fa-heart text-lg"></i>
+              </button>
+            </div>
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center">
+              <div class="text-center">
+                <i class="fas fa-home text-gray-300 text-6xl mb-4"></i>
+                <p class="text-gray-400 font-medium">No photos available</p>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+        
+        {% if property.images.all|length > 1 %}
+        <div class="flex space-x-3 overflow-x-auto pb-2 px-1">
+          {% for image in property.images.all %}
+          <button onclick="showImage('{{ image.image.url }}', this)"
+                  class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 {% if forloop.first %}border-primary{% else %}border-gray-200{% endif %} hover:border-primary transition-colors">
+            <img src="{{ image.image.url }}" 
+                 class="w-full h-full object-cover"
+                 alt="Thumbnail {{ forloop.counter }}">
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- Property Header -->
+      <section>
+        <div class="flex flex-col md:flex-row md:items-start justify-between mb-6">
+          <div class="mb-4 md:mb-0">
+            <h1 class="text-3xl font-bold text-gray-900 mb-3 leading-tight">{{ property.title }}</h1>
+            <div class="flex flex-wrap items-center gap-2 text-gray-600">
+              <div class="flex items-center">
+                <i class="fas fa-map-marker-alt text-primary mr-2"></i>
+                <span class="font-medium">{{ property.get_location_display }}</span>
+              </div>
+              <span class="hidden md:inline">•</span>
+              <div class="flex items-center">
+                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                <span class="text-green-600 font-medium">Verified Property</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-left md:text-right">
+            <div class="text-4xl font-bold text-primary leading-none">{{ property.price|floatformat:0 }} <span class="text-lg text-gray-600 font-normal">ETB/month</span></div>
+            <div class="text-sm text-gray-500 mt-1">Monthly rent • Utilities not included</div>
+          </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-y py-6">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-gray-900">{{ property.bedrooms }}</div>
+            <div class="text-sm text-gray-600 mt-1">Bedrooms</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-gray-900">{{ property.bathrooms }}</div>
+            <div class="text-sm text-gray-600 mt-1">Bathrooms</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-gray-900">{{ property.area|floatformat:0 }}</div>
+            <div class="text-sm text-gray-600 mt-1">Square Meters</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-gray-900">{{ property.property_type|title }}</div>
+            <div class="text-sm text-gray-600 mt-1">Property Type</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Description -->
+      <section>
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Description</h2>
+        <div class="prose max-w-none text-gray-700 leading-relaxed">
+          <p class="whitespace-pre-line">{{ property.description }}</p>
+        </div>
+      </section>
+
+      <!-- Dynamic Amenities Section (Only if any amenities exist) -->
+      {% if property.is_furnished or property.has_parking or property.has_balcony or property.has_security or property.has_backup_generator or property.has_internet or property.pet_friendly %}      <section>
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Amenities & Features</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {% if property.is_furnished %}
+          <div class="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <i class="fas fa-couch text-primary text-xl w-8"></i>
+            <div class="ml-4">
+              <div class="font-medium text-gray-900">Fully Furnished</div>
+              <div class="text-sm text-gray-600">Ready to move in</div>
+            </div>
+          </div>
+          {% endif %}
+          
+          {% if property.has_parking %}
+          <div class="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <i class="fas fa-parking text-primary text-xl w-8"></i>
+            <div class="ml-4">
+              <div class="font-medium text-gray-900">Parking Space</div>
+              <div class="text-sm text-gray-600">Dedicated parking</div>
+            </div>
+          </div>
+          {% endif %}
+          
+          {% if property.has_balcony %}
+          <div class="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <i class="fas fa-building text-primary text-xl w-8"></i>
+            <div class="ml-4">
+              <div class="font-medium text-gray-900">Balcony</div>
+              <div class="text-sm text-gray-600">Private outdoor space</div>
+            </div>
+          </div>
+          {% endif %}
+          
+          {% if property.has_security %}
+          <div class="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <i class="fas fa-shield-alt text-primary text-xl w-8"></i>
+            <div class="ml-4">
+              <div class="font-medium text-gray-900">24/7 Security</div>
+              <div class="text-sm text-gray-600">Guarded compound</div>
+            </div>
+          </div>
+          {% endif %}
+          
+          {% if property.has_backup_generator %}
+          <div class="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <i class="fas fa-bolt text-primary text-xl w-8"></i>
+            <div class="ml-4">
+              <div class="font-medium text-gray-900">Backup Generator</div>
+              <div class="text-sm text-gray-600">Power backup</div>
+            </div>
+          </div>
+          {% endif %}
+          
+          {% if property.has_internet %}
+          <div class="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <i class="fas fa-wifi text-primary text-xl w-8"></i>
+            <div class="ml-4">
+              <div class="font-medium text-gray-900">High-Speed Internet</div>
+              <div class="text-sm text-gray-600">Fiber optic ready</div>
+            </div>
+          </div>
+          {% endif %}
+          
+          {% if property.pet_friendly %}
+          <div class="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <i class="fas fa-paw text-primary text-xl w-8"></i>
+            <div class="ml-4">
+              <div class="font-medium text-gray-900">Pet Friendly</div>
+              <div class="text-sm text-gray-600">Pets allowed</div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- Reviews Section (Always shown) -->
+      <section>
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">Reviews & Questions</h2>
+          {% if property.average_rating > 0 %}
+          <div class="flex items-center bg-gray-50 px-4 py-2 rounded-full">
+            <span class="text-yellow-500 font-bold text-xl mr-2">⭐ {{ property.average_rating|floatformat:1 }}</span>
+            <span class="text-gray-600">({{ property.review_count }} review{{ property.review_count|pluralize }})</span>
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- Review form for non-owners -->
+        {% if user.is_authenticated and user != property.landlord and not user_already_reviewed %}
+        <div class="bg-gray-50 rounded-2xl p-6 mb-8">
+          <h3 class="text-lg font-bold text-gray-900 mb-4">Share your experience</h3>
+          <form method="POST">
+            {% csrf_token %}
+            <select name="review_type" id="reviewType" class="w-full p-3 border rounded-lg mb-4" onchange="toggleRating()">
+              <option value="review">⭐ Leave a Review</option>
+              <option value="question">❓ Ask a Question</option>
+              <option value="tip">💡 Share a Tip</option>
+            </select>
+            
+            <div id="ratingSection" class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Your Rating</label>
+              <div class="flex space-x-1">
+                {% for i in "12345" %}
+                <button type="button" onclick="setRating({{ forloop.counter }})" class="text-2xl">
+                  <i id="star{{ forloop.counter }}" class="far fa-star text-gray-300 hover:text-yellow-400"></i>
+                </button>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="rating" id="selectedRating" value="3">
+            </div>
+            
+            <textarea name="comment" 
+                      class="w-full p-4 border rounded-lg mb-4" 
+                      rows="3" 
+                      placeholder="Share your thoughts or ask a question..."
+                      required></textarea>
+            
+            <button type="submit" class="w-full py-3 bg-primary text-white font-medium rounded-lg hover:bg-green-800 transition-colors">
+              Submit Feedback
+            </button>
+          </form>
+        </div>
+        {% endif %}
+        
+        <!-- Reviews List -->
+        <div class="space-y-6">
+          {% for review in reviews %}
+          <div class="border border-gray-200 rounded-2xl p-6 hover:border-gray-300 transition-colors">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold mr-3">
+                  {{ review.reviewer.first_name|first }}
+                </div>
+                <div>
+                  <div class="font-bold text-gray-900">{{ review.reviewer.first_name }}</div>
+                  <div class="text-sm text-gray-500">{{ review.created_at|date:"M d, Y" }}</div>
+                </div>
+              </div>
+              
+              <div>
+                {% if review.review_type == 'question' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                  <i class="fas fa-question-circle mr-1"></i> Question
+                </span>
+                {% elif review.review_type == 'tip' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  <i class="fas fa-lightbulb mr-1"></i> Tip
+                </span>
+                {% else %}
+                <div class="flex items-center">
+                  {% for i in "12345" %}
+                  <i class="fas fa-star {% if forloop.counter <= review.rating %}text-yellow-500{% else %}text-gray-300{% endif %}"></i>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <p class="text-gray-700 mb-4">{{ review.comment }}</p>
+            
+            <!-- Replies -->
+            {% if review.replies.exists %}
+            <div class="ml-6 pl-6 border-l-2 border-gray-200 space-y-4">
+              {% for reply in review.replies.all %}
+              <div class="pt-4">
+                <div class="flex items-center mb-2">
+                  <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm mr-2">
+                    {{ reply.reviewer.first_name|first }}
+                  </div>
+                  <div>
+                    <div class="font-bold text-gray-900 text-sm">{{ reply.reviewer.first_name }}</div>
+                    <div class="text-xs text-gray-500">{{ reply.created_at|timesince }} ago</div>
+                  </div>
+                </div>
+                <p class="text-gray-600 text-sm">{{ reply.comment }}</p>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Reply button for owner -->
+            {% if user == property.landlord and not review.replies.exists %}
+            <div class="mt-4 pt-4 border-t">
+              <button onclick="showReplyForm({{ review.id }})" 
+                      class="text-sm text-primary hover:text-green-800 font-medium">
+                <i class="fas fa-reply mr-1"></i> Reply
+              </button>
+              <div id="reply-form-{{ review.id }}" class="reply-form hidden mt-4">
+                <form method="POST" action="{% url 'add_reply' review.id %}" class="space-y-3">
+                  {% csrf_token %}
+                  <textarea name="comment" 
+                            class="w-full p-3 border rounded-lg" 
+                            rows="2" 
+                            placeholder="Write your reply..."
+                            required></textarea>
+                  <input type="hidden" name="review_type" value="reply">
+                  <button type="submit" class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-green-800">
+                    Post Reply
+                  </button>
+                </form>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          {% empty %}
+          <div class="text-center py-12 border-2 border-dashed border-gray-300 rounded-2xl">
+            <i class="fas fa-comments text-gray-300 text-4xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No reviews yet</h3>
+            <p class="text-gray-600 max-w-md mx-auto">Be the first to share your experience or ask a question about this property.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column - Contact Actions (1/3 width) -->
+    <div class="lg:col-span-1 space-y-6">
+      {% if user.is_authenticated and user != property.landlord %}
+      <!-- Visitor is logged in AND it's not their own property -->
+      <div class="sticky top-6 space-y-6">
+        <!-- Contact Card -->
+        <div class="bg-white rounded-2xl shadow-xl border p-6">
+          <h3 class="text-xl font-bold text-gray-900 mb-4">Contact Owner</h3>
+          
+          <div class="space-y-4">
+            {% if property.landlord.userrole.phone %}
+            <a href="tel:{{ property.landlord.userrole.phone }}" 
+               class="flex items-center justify-center gap-3 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-green-800 transition-colors shadow-md">
+              <i class="fas fa-phone-alt"></i>
+              Call Now
+            </a>
+            
+            <a href="https://wa.me/251{{ property.landlord.userrole.phone|slice:'4:' }}" 
+               target="_blank"
+               class="flex items-center justify-center gap-3 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-md">
+              <i class="fab fa-whatsapp text-lg"></i>
+              WhatsApp
+            </a>
+            {% endif %}
+            
+            <a href="mailto:{{ property.landlord.email }}" 
+               class="flex items-center justify-center gap-3 py-3 border-2 border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+              <i class="fas fa-envelope"></i>
+              Send Email
+            </a>
+          </div>
+        </div>
+
+        <!-- Quick Message Form -->
+        <div class="bg-white rounded-2xl shadow-xl border p-6">
+          <h3 class="text-xl font-bold text-gray-900 mb-4">Send Quick Message</h3>
+          {% if conversation %}
+          <div class="bg-blue-100 rounded-xl p-4 mb-4">
+            <p class="text-sm font-medium text-gray-700 mb-2">Continue your conversation</p>
+            <a href="{% url 'conversation_view' conversation.id %}" 
+               class="block p-3 bg-white border rounded-lg hover:bg-gray-200 transition-colors">
+              <div class="flex justify-between items-center">
+                <div class="flex-1 truncate">
+                  <span class="text-gray-800">
+                    {% if message.sender == user %}You:{% else %}{{ message.sender.first_name }}:{% endif %}
+                    {{ message.content|truncatechars:30 }}
+                  </span>
+                </div>
+                <span class="text-xs text-gray-500 ml-2 whitespace-nowrap">{{ message.created_at|timesince }} ago</span>
+              </div>
+            </a>
+          </div>
+          {% else %}
+          <form method="POST" action="{% url 'send_new_message' property.id %}">
+            {% csrf_token %}
+            <textarea name="message" 
+                      class="w-full p-4 border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent mb-4" 
+                      rows="3" 
+                      placeholder="Hello, I'm interested in this property. Could you tell me more about..."
+                      required></textarea>
+            <button type="submit" class="w-full py-3 bg-primary text-white font-semibold rounded-xl hover:bg-green-800 transition-colors shadow-md">
+              <i class="fas fa-paper-plane mr-2"></i> Send Message
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      
+      {% elif not user.is_authenticated %}
+      <!-- Visitor is NOT logged in -->
+      <div class="sticky top-6">
+        <div class="bg-gradient-to-br from-primary to-green-700 text-white rounded-2xl shadow-xl p-8 text-center">
+          <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-lock text-3xl"></i>
+          </div>
+          <h3 class="text-2xl font-bold mb-4">Login to Contact Owner</h3>
+          <p class="text-white/90 mb-8 leading-relaxed">Sign in to see contact details, message the property owner directly, and save your favorite properties.</p>
+          
+          <div class="space-y-4">
+            <a href="{% url 'login_view' %}" 
+               class="block w-full bg-white text-primary py-4 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg">
+              <i class="fas fa-sign-in-alt mr-2"></i>Login Now
+            </a>
+            <a href="{% url 'signup_view' %}" 
+               class="block w-full border-2 border-white text-white py-4 rounded-xl font-bold hover:bg-white/10 transition-colors">
+              <i class="fas fa-user-plus mr-2"></i>Create Free Account
+            </a>
+          </div>
+          
+          <p class="text-sm text-white/80 mt-8 pt-6 border-t border-white/20">
+            Join thousands of Ethiopians finding their perfect home
+          </p>
+        </div>
+      </div>
+      
+      {% else %}
+      <!-- User IS logged in AND it's their own property -->
+      <div class="sticky top-6 space-y-6">
+        <div class="bg-white rounded-2xl shadow-xl border p-6">
+          <div class="text-center mb-6">
+            <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-home text-primary text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">This is Your Property</h3>
+            <p class="text-gray-600">Manage your listing</p>
+          </div>
+          
+          <div class="space-y-3">
+            <a href="{% url 'property_edit_view' property.id %}" 
+               class="flex items-center justify-center gap-3 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-green-800 transition-colors">
+              <i class="fas fa-edit"></i>Edit Property
+            </a>
+            
+            <a href="{% url 'dashboard_view' %}" 
+               class="flex items-center justify-center gap-3 py-3 border-2 border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+              <i class="fas fa-chart-bar"></i>View Analytics
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+// Image Gallery
+function showImage(src, element) {
+  document.getElementById('mainImage').src = src;
+  document.querySelectorAll('[onclick^="showImage"]').forEach(thumb => {
+    thumb.classList.remove('border-primary');
+    thumb.classList.add('border-gray-200');
+  });
+  element.classList.remove('border-gray-200');
+  element.classList.add('border-primary');
+}
+
+// Rating System
+function setRating(rating) {
+  document.getElementById('selectedRating').value = rating;
+  for (let i = 1; i <= 5; i++) {
+    const star = document.getElementById(`star${i}`);
+    if (i <= rating) {
+      star.classList.remove('far', 'text-gray-300');
+      star.classList.add('fas', 'text-yellow-500');
+    } else {
+      star.classList.remove('fas', 'text-yellow-500');
+      star.classList.add('far', 'text-gray-300');
+    }
+  }
+}
+
+// Review Type Toggle
+function toggleRating() {
+  const reviewType = document.getElementById('reviewType').value;
+  const ratingSection = document.getElementById('ratingSection');
+  ratingSection.style.display = reviewType === 'review' ? 'block' : 'none';
+}
+
+// Reply Forms
+function showReplyForm(reviewId) {
+  document.querySelectorAll('.reply-form').forEach(form => form.classList.add('hidden'));
+  const form = document.getElementById(`reply-form-${reviewId}`);
+  if (form) form.classList.toggle('hidden');
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  toggleRating();
+  setRating(3); // Default rating
+});
+</script>
+
+<style>
+.font-sans {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.prose {
+  line-height: 1.75;
+}
+
+.sticky {
+  position: sticky;
+}
+</style>
+{% endblock %}

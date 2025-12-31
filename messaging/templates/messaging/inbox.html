@@ -1,0 +1,266 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Messages - YebetKiray{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-2">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900">
+            <i class="fas fa-comments text-primary mr-2"></i>Messages
+        </h1>
+        <div class="flex items-center">
+            {% if total_unread > 0 %}
+            <span id="totalUnreadBadge" class="px-2 sm:px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs sm:text-sm font-medium">
+                <i class="fas fa-bell mr-1"></i>{{ total_unread }} unread
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Parent Grid Container -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-0 bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden" style="min-height: 60vh; max-height: 70vh;">
+        
+        <!-- Left: Conversation List -->
+        <div id="conversationList" class="col-span-1 border-r border-gray-200 overflow-y-auto bg-gray-50">
+            <!-- Search/Filter Bar -->
+            <div class="p-2 sm:p-3 border-b border-gray-200 bg-white">
+                <div class="relative">
+                    <input type="text" 
+                           placeholder="Search conversations..."
+                           class="w-full bg-gray-100 rounded-lg px-3 sm:px-4 py-2 pl-8 sm:pl-10 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white">
+                    <i class="fas fa-search absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+                </div>
+            </div>
+            
+            <!-- Conversations List -->
+            <div class="divide-y divide-gray-200">
+                {% for conv in conversations %}
+                {% with other_user=conv.get_other_participant.request.user %}
+                <a href="{% url 'conversation_view' conv.id %}" 
+                   class="conversation-item block p-2 sm:p-3 hover:bg-white transition-all duration-200"
+                   data-conversation-id="{{ conv.id }}">
+                    <div class="flex items-start">
+                        <!-- Profile Picture -->
+                        <div class="relative mr-2 sm:mr-3 flex-shrink-0">
+                            {% if other_user.userrole.profile_picture %}
+                            <img src="{{ other_user.userrole.profile_picture.url }}" 
+                                 alt="{{ other_user.get_full_name }}"
+                                 class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-white shadow-sm">
+                            {% else %}
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm sm:text-base border-2 border-white shadow-sm">
+                                {{ other_user.first_name|first }}{{ other_user.last_name|first }}
+                            </div>
+                            {% endif %}
+                            <div class="absolute bottom-0 right-0 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                        </div>
+                        
+                        <!-- Conversation Details -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start mb-0.5 sm:mb-1">
+                                <h4 class="font-semibold text-gray-900 truncate text-xs sm:text-sm">
+                                    {{ other_user.get_full_name }}
+                                </h4>
+                                <span class="text-xs text-gray-500 flex-shrink-0 ml-1 sm:ml-2 text-[10px] sm:text-xs">
+                                    {{ conv.updated_at|timesince }} ago
+                                </span>
+                            </div>
+                            
+                            <div class="flex flex-wrap items-center mb-1">
+                                <span class="text-[10px] sm:text-xs bg-blue-50 text-blue-700 px-1.5 sm:px-2 py-0.5 rounded mr-1 sm:mr-2">
+                                    <i class="fas fa-home text-[10px] sm:text-xs mr-0.5"></i>{{ conv.property.get_location_display|truncatechars:15 }}
+                                </span>
+                                <span class="text-[10px] sm:text-xs font-medium text-primary">
+                                    {{ conv.property.price }} ETB
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs sm:text-sm text-gray-600 truncate">
+                                        {% with last_msg=conv.messages.last %}
+                                            {% if last_msg %}
+                                                {% if last_msg.sender == request.user %}
+                                                    <span class="text-gray-500 font-medium">You: </span>
+                                                {% endif %}
+                                                {% if last_msg.attachment %}
+                                                    <i class="fas fa-paperclip text-[10px] sm:text-xs mr-0.5"></i>Attachment
+                                                {% else %}
+                                                    {{ last_msg.content|truncatechars:20 }}
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-gray-400 italic text-[10px] sm:text-xs">No messages yet</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </p>
+                                </div>
+                                
+                                {% if conv.unread_count > 0 %}
+                                <span class="ml-1 sm:ml-2 bg-primary text-white text-[10px] sm:text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center flex-shrink-0">
+                                    {{ conv.unread_count }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endwith %}
+                {% empty %}
+                <div class="p-4 sm:p-8 text-center">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                        <i class="fas fa-comments text-xl sm:text-3xl text-blue-400"></i>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">No conversations</h3>
+                    <p class="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4">Start a conversation from any property page</p>
+                    <a href="{% url 'home_view' %}" 
+                       class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-white rounded-lg hover:bg-green-800 text-xs sm:text-sm font-medium">
+                        <i class="fas fa-search mr-1 sm:mr-2"></i> Browse Properties
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Right: Message Thread -->
+        <div id="rightPanel" class="col-span-1 md:col-span-2 overflow-y-auto max-h-[600px] hidden md:block">
+            <div id="defaultView" class="h-full flex flex-col items-center justify-center p-4 sm:p-8 text-center bg-gradient-to-br from-gray-50 to-white">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-comments text-2xl sm:text-3xl text-primary"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2">Select a conversation</h3>
+                <p class="text-gray-600 max-w-md text-sm sm:text-base mb-4 sm:mb-6">
+                    Choose a conversation from the list to view messages.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Simple show/hide functions
+function showMessageThread() {
+    if (window.innerWidth < 768) {
+        document.getElementById('conversationList').classList.add('hidden');
+        document.getElementById('rightPanel').classList.remove('hidden');
+    }
+}
+
+function backToConversations() {
+    if (window.innerWidth < 768) {
+    document.getElementById('conversationList').classList.remove('hidden');
+    document.getElementById('rightPanel').classList.add('hidden');
+
+    } else {
+        document.getElementById('rightPanel').innerHTML = 
+        ` <div id="rightPanel" class="col-span-1 md:col-span-2  md:block">
+            <div id="defaultView" class="h-full flex flex-col items-center justify-center p-4 sm:p-8 text-center bg-gradient-to-br from-gray-50 to-white">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-comments text-2xl sm:text-3xl text-primary"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2">Select a conversation</h3>
+                <p class="text-gray-600 max-w-md text-sm sm:text-base mb-4 sm:mb-6">
+                    Choose a conversation from the list to view messages.
+                </p>
+            </div>
+        </div>`;
+        document.getElementById('rightPanel').classList.remove('hidden')
+    }
+}
+
+// Load conversation on click
+document.querySelectorAll('.conversation-item').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const url = this.href;
+        
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const rightPanel = document.getElementById('rightPanel');
+            if (rightPanel) {
+                rightPanel.innerHTML = html;
+                showMessageThread();
+                
+                setTimeout(() => {
+                    const messagesContainer = document.getElementById('messagesContainer');
+                    if (messagesContainer) {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }
+                }, 50);
+            }
+        })
+        .catch(error => {
+            window.location.href = url;
+        });
+    });
+});
+
+// Handle message sending
+document.addEventListener('submit', function(e) {
+    const form = e.target;
+    
+    if (form.tagName === 'FORM' && form.id === 'messageForm') {
+        e.preventDefault();
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        submitBtn.disabled = true;
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                form.querySelector('textarea[name="content"]').value = '';
+                
+                const conversationId = form.action.split('/').slice(-2, -1)[0];
+                
+                fetch(`/messages/conversation/${conversationId}/`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('rightPanel').innerHTML = html;
+                    
+                    setTimeout(() => {
+                        const messagesContainer = document.getElementById('messagesContainer');
+                        if (messagesContainer) {
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }
+                    }, 100);
+                });
+            } else {
+                alert('Error: ' + data.error);
+            }
+            
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    }
+});
+
+// Handle attachment button
+function attachmentDispaly() {
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.click();
+    }
+}
+</script>
+{% endblock %}

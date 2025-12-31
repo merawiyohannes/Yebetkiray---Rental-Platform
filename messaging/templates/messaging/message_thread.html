@@ -1,0 +1,165 @@
+<!-- messaging/message_thread.html -->
+<div class="flex-1 flex flex-col h-full">
+    <!-- Conversation Header -->
+    <div class="p-3 sm:p-4 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 flex flex-col sm:flex-row sm:justify-between sm:items-center shadow-sm gap-2 sm:gap-0">
+        <div class="flex items-center">
+            <div class="relative">
+                {% with other_user=active_conversation.get_other_participant.request.user %}
+                {% if other_user.userrole.profile_picture %}
+                <img src="{{ other_user.userrole.profile_picture.url }}" 
+                     class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover mr-2 sm:mr-3 border-2 border-white shadow">
+                {% else %}
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm sm:text-base mr-2 sm:mr-3 border-2 border-white shadow">
+                    {{ other_user.first_name|first }}{{ other_user.last_name|first }}
+                </div>
+                {% endif %}
+                <div class="absolute bottom-0 right-0 sm:right-2 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                {% endwith %}
+            </div>
+            
+            <div class="overflow-hidden">
+                <h2 class="font-bold text-gray-900 text-sm sm:text-base truncate">{{ active_conversation.get_other_participant.request.user.get_full_name }}</h2>
+                <p class="text-xs sm:text-sm text-gray-600 flex items-center">
+                    <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mr-1 sm:mr-2"></span>
+                    Online • <span class="truncate">{{ active_conversation.property.location|truncatechars:20 }}</span>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Desktop Close Button -->
+        <button onclick="backToConversations()" 
+                class=" w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 flex items-center justify-center text-gray-600 transition-all duration-200 shadow-sm text-sm">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <!-- Messages Area -->
+    <div class="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gradient-to-b from-gray-50 to-white" id="messagesContainer">
+        {% for message in active_conversation.messages.all %}
+        
+        {% if message.sender == request.user %}
+            <!-- MY MESSAGE - Right side -->
+            <div class="flex justify-end">
+                <div class="max-w-[85%] sm:max-w-lg">
+                    <div class="flex flex-col items-end">
+                        <div class="bg-gradient-to-r from-primary to-green-600 text-white rounded-2xl rounded-tr-none shadow-sm px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
+                            {% if message.attachment %}
+                                <!-- ATTACHMENT MESSAGE -->
+                                <div class="flex items-center">
+                                    <i class="fas fa-paperclip text-xs sm:text-sm mr-1 sm:mr-2"></i>
+                                    <div class="flex-1 overflow-hidden">
+                                        <p class="font-medium text-xs sm:text-sm">Attachment</p>
+                                        <p class="text-xs text-green-200 truncate">{{ message.attachment_name|cut:"uploads/"|truncatechars:15 }}</p>
+                                    </div>
+                                    <a href="{{ message.attachment.url }}" 
+                                       download
+                                       class="ml-1 sm:ml-2 p-1 sm:p-2 bg-green-800 hover:bg-green-900 rounded-lg transition-all duration-200 text-xs">
+                                        <i class="fas fa-download text-xs sm:text-sm"></i>
+                                    </a>
+                                </div>
+                                {% if message.content %}
+                                    <div class="mt-1 sm:mt-2 pt-1 sm:pt-2 border-t border-green-500 text-xs sm:text-sm">
+                                        {{ message.content|linebreaks|truncatechars:100 }}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <!-- TEXT MESSAGE -->
+                                {{ message.content|linebreaks }}
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center mt-0.5 sm:mt-1 space-x-1 sm:space-x-2 justify-end">
+                            <span class="text-[10px] sm:text-xs text-gray-500">
+                                {{ message.created_at|time:"g:i A" }}
+                            </span>
+                            {% if message.read %}
+                                <span class="text-[10px] sm:text-xs text-blue-300">
+                                    <i class="fas fa-check-double"></i>
+                                </span>
+                            {% else %}
+                                <span class="text-[10px] sm:text-xs text-gray-300">
+                                    <i class="fas fa-check"></i>
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- THEIR MESSAGE - Left side -->
+            <div class="flex justify-start">
+                <div class="max-w-[85%] sm:max-w-lg">
+                    <div class="flex flex-col items-start">
+                        <div class="bg-gray-300 border border-gray-200 text-gray-900 rounded-2xl rounded-tl-none shadow-sm px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
+                            {% if message.attachment %}
+                                <!-- ATTACHMENT MESSAGE -->
+                                <div class="flex items-center">
+                                    <i class="fas fa-paperclip text-xs sm:text-sm mr-1 sm:mr-2"></i>
+                                    <div class="flex-1 overflow-hidden">
+                                        <p class="font-medium text-xs sm:text-sm truncate">{{ message.attachment.name|cut:"uploads/"|truncatechars:15 }}</p>
+                                    </div>
+                                    <a href="{{ message.attachment.url }}" download
+                                    class="ml-1 sm:ml-2 p-1 sm:p-2 bg-green-800 hover:bg-green-900 rounded-lg transition-all duration-200 text-xs">
+                                        <i class="fas fa-download text-xs sm:text-sm"></i>
+                                    </a>
+                                </div>
+                                {% if message.content %}
+                                    <div class="mt-1 sm:mt-2 pt-1 sm:pt-2 border-t border-gray-400 text-xs sm:text-sm">
+                                        {{ message.content|linebreaks|truncatechars:100 }}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <!-- TEXT MESSAGE -->
+                                {{ message.content|linebreaks }}
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center mt-0.5 sm:mt-1 space-x-1 sm:space-x-2">
+                            <span class="text-[10px] sm:text-xs text-gray-500">
+                                {{ message.created_at|time:"g:i A" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        {% empty %}
+        <div class="h-full flex flex-col items-center justify-center text-gray-400 p-4">
+            <i class="fas fa-comment-alt text-3xl sm:text-5xl mb-2 sm:mb-4 opacity-50"></i>
+            <p class="text-gray-500 text-sm sm:text-base text-center">No messages yet. Start the conversation!</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Message Input Form -->
+    <div id="sendForm" class="p-3 sm:p-4 border-t border-gray-200 bg-gradient-to-r from-white to-gray-50 shadow-sm">
+        <form method="POST" action="{% url 'send_message' active_conversation.id %}" id="messageForm">
+            {% csrf_token %}
+            
+            <div class="flex space-x-2">
+                <div class="flex-1 relative">
+                    <textarea name="content"
+                              rows="1"
+                              placeholder="Type your message..."
+                              class="w-full border border-gray-300 rounded-xl px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none bg-white shadow-inner text-sm sm:text-base"></textarea>
+                    
+                    <div class="absolute right-2 sm:right-3 bottom-2 sm:bottom-3 flex space-x-1 sm:space-x-2">
+                        <button type="button" 
+                                onclick="attachmentDispaly()"
+                                class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 flex items-center justify-center text-gray-600 shadow-sm transition-all duration-200 text-xs sm:text-sm">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                    </div>
+                    
+                    <input type="file" id="fileInput" name="attachment" class="hidden" accept="image/*,.pdf,.doc,.docx">
+                </div>
+                
+                <button id="sendBtn"
+                        type="submit" 
+                        class="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-primary to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 font-medium transition-all duration-200 shadow-sm hover:shadow text-sm sm:text-base">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+

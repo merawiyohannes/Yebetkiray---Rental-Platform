@@ -1,0 +1,98 @@
+<!-- messaging/create_template.html -->
+{% extends "core/base.html" %}
+
+{% block title %}Create Template - YebetKiray{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <h1 class="text-2xl font-bold mb-6">Create Message Template</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="mb-6">
+                <label class="block text-gray-700 mb-2 font-medium">Template Name</label>
+                <input type="text" 
+                       name="name" 
+                       required
+                       class="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
+                       placeholder="e.g., 'Viewing Request' or 'Document Requirements'">
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-gray-700 mb-2 font-medium">Category</label>
+                <select name="category" 
+                        class="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="greeting">👋 Greeting</option>
+                    <option value="viewing">👀 Viewing Request</option>
+                    <option value="documents">📄 Document Request</option>
+                    <option value="questions">❓ Follow-up Questions</option>
+                    <option value="rejection">🚫 Not Suitable</option>
+                    <option value="confirmation">✅ Confirmation</option>
+                </select>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-gray-700 mb-2 font-medium">Template Content</label>
+                <textarea name="content" 
+                          rows="6"
+                          required
+                          class="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
+                          placeholder="Write your template message here..."></textarea>
+                <p class="text-sm text-gray-500 mt-2">
+                    Tip: Use placeholders like [Property Name] or [Your Name] for personalization
+                </p>
+            </div>
+            
+            <!-- Example Templates -->
+            <div class="mb-8">
+                <h3 class="font-medium text-gray-700 mb-3">Example Templates:</h3>
+                <div class="space-y-3">
+                    <button type="button" 
+                            onclick="fillTemplate(this)"
+                            data-content="Hello, I'm interested in viewing [Property Name]. When would be a good time for a visit?"
+                            class="text-left w-full p-3 bg-gray-50 rounded hover:bg-gray-100 text-sm">
+                        <span class="font-medium">Viewing Request:</span><br>
+                        Hello, I'm interested in viewing [Property Name]. When would be a good time for a visit?
+                    </button>
+                    
+                    <button type="button" 
+                            onclick="fillTemplate(this)"
+                            data-content="Thank you for your interest. Please bring your ID and 1 month deposit for viewing."
+                            class="text-left w-full p-3 bg-gray-50 rounded hover:bg-gray-100 text-sm">
+                        <span class="font-medium">Document Request:</span><br>
+                        Thank you for your interest. Please bring your ID and 1 month deposit for viewing.
+                    </button>
+                    
+                    <button type="button" 
+                            onclick="fillTemplate(this)"
+                            data-content="The property has been rented. Thank you for your interest."
+                            class="text-left w-full p-3 bg-gray-50 rounded hover:bg-gray-100 text-sm">
+                        <span class="font-medium">Property Rented:</span><br>
+                        The property has been rented. Thank you for your interest.
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <a href="{% url 'template_list' %}" 
+                   class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-green-800">
+                    <i class="fas fa-save mr-2"></i> Save Template
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function fillTemplate(button) {
+    const content = button.getAttribute('data-content');
+    document.querySelector('textarea[name="content"]').value = content;
+}
+</script>
+{% endblock %}

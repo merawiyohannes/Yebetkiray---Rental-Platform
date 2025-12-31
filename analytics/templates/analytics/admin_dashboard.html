@@ -1,0 +1,123 @@
+<!-- templates/analytics/admin_dashboard.html -->
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Simple Header -->
+    <div class="mb-8 p-4 bg-blue-900 text-white rounded-lg">
+        <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+        <p class="text-blue-200">Welcome, {{ request.user.username }}</p>
+    </div>
+
+    <!-- 4 Key Stats Only -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <!-- Verified Properties -->
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+            <div class="text-2xl font-bold text-gray-800">{{ verified_properties|default:"0" }}</div>
+            <div class="text-sm text-gray-600">Verified Properties</div>
+        </div>
+
+        <!-- Pending Properties -->
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+            <div class="text-2xl font-bold text-gray-800">{{ pending_properties|default:"0" }}</div>
+            <div class="text-sm text-gray-600">Pending Review</div>
+        </div>
+
+        <!-- Total Properties -->
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+            <div class="text-2xl font-bold text-gray-800">{{ total_users|default:"0" }}</div>
+            <div class="text-sm text-gray-600">Total Users</div>
+        </div>
+
+        <!-- Unread Messages -->
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+            <div class="text-2xl font-bold text-gray-800">{{ unread_admin_messages|default:"0" }}</div>
+            <div class="text-sm text-gray-600">Unread Messages</div>
+        </div>
+    </div>
+
+    <!-- Two Main Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Verify Properties Button -->
+        <a href="{% url 'admin_verify' %}" class="block">
+            <div class="bg-white p-6 rounded-lg shadow border hover:shadow-lg transition text-center">
+                <div class="text-3xl mb-3">🔍</div>
+                <h3 class="font-bold text-lg">Review Properties</h3>
+                <p class="text-gray-600 mt-2">
+                    {% if pending_count %}
+                        {{ pending_count }} properties waiting for review
+                    {% else %}
+                        All properties reviewed
+                    {% endif %}
+                </p>
+                <button class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Go to Verification
+                </button>
+            </div>
+        </a>
+
+        <!-- View Messages Button -->
+        <a href="{% url 'inbox_view' %}" class="block">
+            <div class="bg-white p-6 rounded-lg shadow border hover:shadow-lg transition text-center">
+                <div class="text-3xl mb-3">✉️</div>
+                <h3 class="font-bold text-lg">View Messages</h3>
+                <p class="text-gray-600 mt-2">
+                    {% if messages_count %}
+                        {{ messages_count }} unread messages
+                    {% else %}
+                        No unread messages
+                    {% endif %}
+                </p>
+                <button class="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                    Go to Inbox
+                </button>
+            </div>
+        </a>
+    </div>
+
+    <!-- Recent Messages -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="font-bold text-lg mb-4">Recent Messages</h3>
+        
+        {% if conversations %}
+        <div class="space-y-3">
+            {% for conversation in conversations|slice:":5" %}
+            <div class="flex items-center p-3 border rounded hover:bg-gray-50">
+                <div class="mr-3">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600"></i>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="font-medium">{{ conversation.sender.username|default:"User" }}</div>
+                    <div class="text-sm text-gray-600">{{ conversation.message|truncatechars:50 }}</div>
+                </div>
+                <div class="text-xs text-gray-500">
+                    {{ conversation.timestamp|timesince }} ago
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if conversations|length > 5 %}
+        <div class="mt-4 text-center">
+            <a href="{% url 'inbox_view' %}" class="text-blue-600 hover:text-blue-800">
+                View all messages →
+            </a>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-8 text-gray-500">
+            <i class="fas fa-comments text-3xl mb-3"></i>
+            <p>No recent messages</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Simple Footer Note -->
+    <div class="mt-8 text-center text-sm text-gray-500">
+        Admin access only • Use responsibly
+    </div>
+</div>
+{% endblock %}
