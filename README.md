@@ -6,6 +6,8 @@ GitHub: https://github.com/merawiyohannes/Yebetkiray---Rental-Platform
 
 🚀 Complete Production-Ready Platform
 ✨ What's New in v2.0
+
+
 ✅ Payment Integration – Chapa gateway for featured property upgrades
 ✅ Real-time Messaging – Chat with attachments between users
 ✅ Advanced Property Management – Full CRUD with admin verification
