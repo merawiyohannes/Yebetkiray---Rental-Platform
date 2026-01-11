@@ -478,9 +478,9 @@
                         </div>
                         
                         <!-- Main messaging layout -->
-                        <div class="bg-white rounded-xl shadow-lg overflow-hidden flex" style="height: 70vh;">
+                        <div class="border border-green-700 bg-white rounded-xl shadow-lg overflow-hidden flex" style="height: 70vh;">
                             <!-- Left: Conversation List -->
-                            <div id="conversationList" class="w-full md:w-1/3 border-r border-gray-200 overflow-y-auto bg-gray-50">
+                            <div id="conversationList" class="border border-blue-800 w-full md:w-1/3 border-r border-gray-200 overflow-y-auto bg-gray-50">
                                 <!-- Search/Filter Bar -->
                                 <div class="p-3 border-b border-gray-200 bg-white">
                                     <div class="relative">
@@ -580,7 +580,7 @@
                             </div>
                             
                             <!-- Right: Message Thread OR Default View -->
-                            <div id="rightPanel" class="hidden md:flex md:w-2/3 flex-col">
+                            <div id="rightPanel" class="border border-red-600 hidden md:flex md:w-2/3 flex-col">
                                 <div id="messageThread" class="flex-1 flex flex-col"></div>
                                 
                                 <div id="defaultView" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-gray-50 to-white">
@@ -795,6 +795,149 @@
             </button>
             <!-- Copy sidebar content here -->
         </div>
+        <div class="flex min-h-screen">
+            <!-- LEFT SIDEBAR: SaaS Dashboard Navigation -->
+            <div class="w-64 bg-gradient-to-b from-gray-50 to-white border-r border-gray-400 py-6 px-4">
+                <!-- User Profile Card -->
+                <div class="mb-8 p-4 bg-gray-300 rounded-xl shadow-sm border border-gray-100">
+                    <div class="flex items-center mb-4">
+                        {% if request.user.userrole.profile_picture %}
+                        <img src="{{ request.user.userrole.profile_picture.url }}" 
+                            alt="Profile"
+                            class="w-12 h-12 rounded-full object-cover border-2 border-primary mr-3">
+                        {% else %}
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-green-600 flex items-center justify-center text-white font-bold text-lg mr-3">
+                            {{ request.user.first_name|first }}{{ request.user.last_name|first }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h3 class="font-bold text-gray-900">{{ request.user.get_short_name|default:request.user.username }}</h3>
+                            <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                                {{ request.user.userrole.get_user_type_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="space-y-3">
+                        {% if request.user.userrole.user_type == 'landlord' %}
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Properties</span>
+                            <span class="font-bold">{{ properties_count }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Verified</span>
+                            <span class="font-bold text-green-600">{{ verified_count }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Total Views</span>
+                            <span class="font-bold text-yellow-600">{{ total_view }}</span>
+                        </div>
+                        {% else %}
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Saved</span>
+                            <span class="font-bold text-primary">{{ saved_count }}</span>
+                        </div>
+                        {% endif %}
+                        
+                    </div>
+                </div>
+                
+                <!-- Navigation Menu -->
+                <nav class="space-y-1 mb-8">
+                    <div class="text-xs text-gray-500 uppercase font-semibold tracking-wider px-3 mb-2">Navigation</div>
+                    
+                    <a href="{% url 'inbox_view' %}" 
+                    class="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-700 hover:text-primary">
+                        <i class="fas fa-comments w-5 mr-3"></i>
+                        Conversations
+                        {% if total_count > 0 %}
+                        <span class="ml-auto bg-primary text-white text-xs px-2 py-0.5 rounded-full min-w-6 text-center">{{ total_count }}</span>
+                        {% endif %}
+                    </a>
+                    
+                    {% if request.user.userrole.user_type == 'landlord' %}
+                    <a href="{% url 'property_create_view' %}" 
+                    class="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-700 hover:text-primary">
+                        <i class="fas fa-plus-circle w-5 mr-3"></i>
+                        Add Property
+                    </a>
+                    {% else %}
+                    <a onclick="showSection('saved')" 
+                    class="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-700 hover:text-primary cursor-pointer">
+                        <i class="fas fa-bookmark w-5 mr-3"></i>
+                        Saved Properties
+                        {% if saved_count > 0 %}
+                        <span class="ml-auto bg-primary text-white text-xs px-2 py-0.5 rounded-full min-w-6 text-center">{{ saved_count }}</span>
+                        {% endif %}
+                    </a>
+                    {% endif %}
+                    
+                    <!-- Admin Only -->
+                    {% if request.user.is_staff or request.user.is_superuser %}
+                    <div class="pt-4 mt-4 border-t border-gray-200">
+                        <div class="text-xs text-gray-500 uppercase font-semibold tracking-wider px-3 mb-2">Admin</div>
+                        <a href="{% url 'admin_verify' %}" 
+                        class="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-700 hover:text-primary">
+                            <i class="fas fa-shield-alt w-5 mr-3"></i>
+                            Verify Properties
+                            {% if pending_count > 0 %}
+                            <span class="ml-auto bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full min-w-6 text-center">{{ pending_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                    {% endif %}
+                </nav>
+                
+                <!-- Quick Actions -->
+                <div class="mb-8">
+                    <div class="text-xs text-gray-500 uppercase font-semibold tracking-wider px-3 mb-2">Quick Actions</div>
+                    <div class="space-y-2">
+                        <a href="{% url 'edit_view' %}" 
+                        class="flex items-center px-3 py-2 text-sm bg-gray-50 hover:bg-gray-300 rounded-lg transition-colors text-gray-700">
+                            <i class="fas fa-user-edit w-4 mr-2"></i>
+                            Edit Profile
+                        </a>
+                        <a href="{% url 'home_view' %}" 
+                        class="flex items-center px-3 py-2 text-sm bg-gray-50 hover:bg-gray-300 rounded-lg transition-colors text-gray-700">
+                            <i class="fas fa-search w-4 mr-2"></i>
+                            Browse Properties
+                        </a>
+                        <div class="">
+                            <form method="POST" action="{% url 'logout_view' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full text-left py-2 px-3 text-white bg-red-500 hover:bg-red-700 rounded transition flex items-center">
+                                    <i class="fas fa-sign-out-alt mr-3"></i> Log out
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Profile Completion -->
+                {% if profile_completion < 100 %}
+                <div class="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-trophy text-yellow-600 mr-2"></i>
+                        <span class="text-sm font-medium text-gray-900">Complete Your Profile</span>
+                    </div>
+                    <div class="mb-2">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-600">{{ profile_completion }}% Complete</span>
+                            <span class="font-medium">{{ profile_completion }}/100</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-yellow-500 h-1.5 rounded-full" style="width: {{ profile_completion }}%"></div>
+                        </div>
+                    </div>
+                    <a href="{% url 'edit_view' %}" 
+                    class="text-xs text-primary hover:underline font-medium">
+                        Complete now →
+                    </a>
+                </div>
+                {% endif %}
+        </div>
+
     </div>
 </div>
 
@@ -807,6 +950,36 @@ document.getElementById('mobileMenuToggle').addEventListener('click', function()
 document.getElementById('mobileMenuClose').addEventListener('click', function() {
     document.getElementById('mobileSidebar').classList.add('hidden');
 });
+
+// Simple show/hide functions
+function showMessageThread() {
+    if (window.innerWidth < 768) {
+        document.getElementById('conversationList').classList.add('hidden');
+        document.getElementById('rightPanel').classList.remove('hidden');
+    }
+}
+
+function backToConversations() {
+    if (window.innerWidth < 768) {
+    document.getElementById('conversationList').classList.remove('hidden');
+    document.getElementById('rightPanel').classList.add('hidden');
+
+    } else {
+        document.getElementById('rightPanel').innerHTML = 
+        ` <div id="rightPanel" class="col-span-1 md:col-span-2 hidden md:block">
+            <div id="defaultView" class="h-full flex flex-col items-center justify-center p-4 sm:p-8 text-center bg-gradient-to-br from-gray-50 to-white">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-4 sm:mb-6">
+                    <i class="fas fa-comments text-2xl sm:text-3xl text-primary"></i>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2">Select a conversation</h3>
+                <p class="text-gray-600 max-w-md text-sm sm:text-base mb-4 sm:mb-6">
+                    Choose a conversation from the list to view messages.
+                </p>
+            </div>
+        </div>`;
+        document.getElementById('rightPanel').classList.remove('hidden')
+    }
+}
 
 // Your existing tab switching functions
 let activeSection = '{% if request.user.userrole.user_type == "landlord" %}properties{% else %}recent{% endif %}';
@@ -871,7 +1044,7 @@ function showPropertyTab(tabName) {
                 const rightPanel = document.getElementById('rightPanel');
                 if (rightPanel) {
                     rightPanel.innerHTML = html;
-                    rightPanel.classList.remove('hidden');
+                    showMessageThread();
                     
                     // Scroll to bottom after HTML is inserted
                     setTimeout(() => {
