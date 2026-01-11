@@ -37,7 +37,9 @@
             <!-- Conversations List -->
             <div class="divide-y divide-gray-200">
                 {% for conv in conversations %}
-                {% with other_user=conv.get_other_participant.request.user %}
+                {% for participant in conv.participants.all %}
+                {% if participant != request.user %}
+                {% with other_user=participant %}
                 <a href="{% url 'conversation_view' conv.id %}" 
                    class="conversation-item block p-2 sm:p-3 hover:bg-white transition-all duration-200"
                    data-conversation-id="{{ conv.id }}">
@@ -106,6 +108,8 @@
                     </div>
                 </a>
                 {% endwith %}
+                {% endif %}
+                {% endfor %}
                 {% empty %}
                 <div class="p-4 sm:p-8 text-center">
                     <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center mx-auto mb-3 sm:mb-4">

@@ -125,18 +125,27 @@ def send_message_view(request, conversation_id):
         'success': False,
         'error': 'Invalid request method'
     })
+    
 @login_required
 def send_property_message_view(request, property_id):
     """Send message from property detail page (creates conversation if needed)"""
     property = get_object_or_404(Property, id=property_id)
+    landlord = property.landlord
     
-    # Find or create conversation
-    conversation, created = Conversation.objects.get_or_create(
+    # Find conversation between THESE 2 SPECIFIC USERS about this property
+    conversation = Conversation.objects.filter(
         property=property,
-    )
-    conversation.participants.add(request.user, property.landlord)
+        participants=request.user
+    ).filter(
+        participants=landlord
+    ).first()  # Get the conversation between these exact 2 users
     
-    # Send message (your existing send logic)
+    if not conversation:
+        # Create NEW conversation for these 2 users
+        conversation = Conversation.objects.create(property=property)
+        conversation.participants.add(request.user, landlord)
+    
+    # Send message
     content = request.POST.get('message', '').strip()
     if content:
         message = Message.objects.create(

@@ -478,9 +478,9 @@
                         </div>
                         
                         <!-- Main messaging layout -->
-                        <div class="border border-green-700 bg-white rounded-xl shadow-lg overflow-hidden flex" style="height: 70vh;">
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden flex" style="height: 70vh;">
                             <!-- Left: Conversation List -->
-                            <div id="conversationList" class="border border-blue-800 w-full md:w-1/3 border-r border-gray-200 overflow-y-auto bg-gray-50">
+                            <div id="conversationList" class="w-full md:w-1/3 border-r border-gray-200 overflow-y-auto bg-gray-50">
                                 <!-- Search/Filter Bar -->
                                 <div class="p-3 border-b border-gray-200 bg-white">
                                     <div class="relative">
@@ -494,7 +494,9 @@
                                 <!-- Conversations List -->
                                 <div class="divide-y divide-gray-200">
                                     {% for conv in conversations %}
-                                    {% with other_user=conv.get_other_participant.request.user %}
+                                    {% for participant in conv.participants.all %}
+                                    {% if participant != request.user %}
+                                    {% with other_user=participant %}
                                     <a href="{% url 'conversation_view' conv.id %}" 
                                     class="conversation-item block p-3 hover:bg-white transition-all duration-200 {% if active_conversation and active_conversation.id == conv.id %}bg-white border-r-3 border-primary shadow-sm{% endif %}"
                                     data-conversation-id="{{ conv.id }}">
@@ -563,6 +565,8 @@
                                         </div>
                                     </a>
                                     {% endwith %}
+                                    {% endif %}
+                                    {% endfor %}
                                     {% empty %}
                                     <div class="p-8 text-center">
                                         <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center mx-auto mb-4">
@@ -580,7 +584,7 @@
                             </div>
                             
                             <!-- Right: Message Thread OR Default View -->
-                            <div id="rightPanel" class="border border-red-600 hidden md:flex md:w-2/3 flex-col">
+                            <div id="rightPanel" class="hidden md:flex md:w-2/3 flex-col">
                                 <div id="messageThread" class="flex-1 flex flex-col"></div>
                                 
                                 <div id="defaultView" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-gray-50 to-white">

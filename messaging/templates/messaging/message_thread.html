@@ -4,7 +4,9 @@
     <div class="p-3 sm:p-4 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 flex flex-col sm:flex-row sm:justify-between sm:items-center shadow-sm gap-2 sm:gap-0">
         <div class="flex items-center">
             <div class="relative">
-                {% with other_user=active_conversation.get_other_participant.request.user %}
+                {% for participant in active_conversation.participants.all %}
+                {% if participant != request.user %}
+                {% with other_user=participant %}
                 {% if other_user.userrole.profile_picture %}
                 <img src="{{ other_user.userrole.profile_picture.url }}" 
                      class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover mr-2 sm:mr-3 border-2 border-white shadow">
@@ -14,16 +16,14 @@
                 </div>
                 {% endif %}
                 <div class="absolute bottom-0 right-0 sm:right-2 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                {% endwith %}
             </div>
             
             <div class="overflow-hidden">
-                <h2 class="font-bold text-gray-900 text-sm sm:text-base truncate">{{ active_conversation.get_other_participant.request.user.get_full_name }}</h2>
-                <p class="text-xs sm:text-sm text-gray-600 flex items-center">
-                    <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mr-1 sm:mr-2"></span>
-                    Online • <span class="truncate">{{ active_conversation.property.location|truncatechars:20 }}</span>
-                </p>
+                <h2 class="font-bold text-gray-900 text-sm sm:text-base truncate">{{ other_user.get_full_name }}</h2>
             </div>
+            {% endwith %}
+            {% endif %}
+            {% endfor %}
         </div>
         
         <!-- Desktop Close Button -->
