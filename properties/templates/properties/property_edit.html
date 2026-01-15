@@ -134,22 +134,94 @@
             </div>
 
             <!-- EXISTING IMAGES (Keep your existing image upload JS code here) -->
-            <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Current Images</label>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {% for image in property.images.all %}
-                    <div class="relative">
-                        <img src="{{ image.image.url }}" class="w-full h-32 object-cover rounded-md">
-                        {% if image.is_primary %}<span class="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-1 rounded">Primary</span>{% endif %}
+            <!-- Image Upload Section -->
+            <div class="mt-6 pt-6 border-t">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">📸 Property Images</h3>
+                
+                <!-- Current Images -->
+                {% if property.images.all %}
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Current Images</label>
+                    <div id="imagesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {% for image in property.images.all %}
+                        <div id="image-{{ image.id }}" class="relative group">
+                            <img src="{{ image.image.url }}" 
+                                class="w-full h-32 object-cover rounded-md shadow-sm hover:shadow-md transition-shadow">
+                            {% if image.is_primary %}
+                            <span class="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-1 rounded">Primary</span>
+                            {% endif %}
+                            <button type="button" onclick="deleteImage({{ image.id }})" 
+                                    class="absolute top-1 right-1 bg-red-500 text-white p-1.5 rounded-full md:opacity-0 md:group-hover:opacity-100 md:transition-opacity hover:bg-red-600">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
-
-            <!-- NEW IMAGES -->
-            <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Add More Images (Optional)</label>
-                <input type="file" name="images" multiple class="form-input" accept="image/*">
+                {% endif %}
+                
+                <!-- Image Upload UI -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Add More Images</label>
+                    
+                    <!-- Drop Zone -->
+                    <div id="dropZone" 
+                        class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary hover:bg-blue-50 transition-colors cursor-pointer">
+                        <div class="space-y-3">
+                            <div class="text-primary">
+                                <i class="fas fa-cloud-upload-alt text-4xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Drop images here or click to upload</p>
+                                <p class="text-xs text-gray-500 mt-1">Upload up to 5 images (JPG, PNG, WebP)</p>
+                            </div>
+                            <button type="button" 
+                                    class="px-4 py-2 bg-primary text-white rounded-md hover:bg-green-800 text-sm font-medium">
+                                <i class="fas fa-plus mr-2"></i> Select Images
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden File Input -->
+                    <input type="file" 
+                        id="fileInput" 
+                        name="images" 
+                        multiple 
+                        accept="image/*" 
+                        class="hidden">
+                    
+                    <!-- Upload Progress -->
+                    <div id="progressContainer" class="mt-4 hidden">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div id="progressBar" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <span id="progressText" class="text-sm text-gray-600">0%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Error Message -->
+                    <div id="uploadError" class="mt-3 text-sm text-red-600 hidden"></div>
+                </div>
+                
+                <!-- Uploaded Preview -->
+                <div id="uploadedPreview" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-4"></div>
+                
+                <!-- Image Tips -->
+                <div class="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-lightbulb text-blue-600 mt-0.5 mr-2"></i>
+                        <div>
+                            <p class="text-sm font-medium text-blue-800 mb-1">Tips for better photos:</p>
+                            <ul class="text-xs text-blue-700 space-y-1">
+                                <li>• Use good lighting - natural light is best</li>
+                                <li>• Show all rooms clearly</li>
+                                <li>• First image will be used as the main thumbnail</li>
+                                <li>• Maximum 5 images per property</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- SUBMIT -->
@@ -168,6 +240,16 @@
 <style>
 .form-input {
     @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent;
+}
+
+/* Animation for uploaded images */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#imagesGrid > div, #uploadedPreview > div {
+    animation: fadeIn 0.3s ease-out;
 }
 </style>
 
@@ -271,7 +353,7 @@ function addImage(img) {
         <img src="${img.url}" class="w-full h-32 object-cover rounded-md">
         ${img.is_primary ? '<span class="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-1 rounded">Primary</span>' : ''}
         <button type="button" onclick="deleteImage(${img.id})" 
-                class="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100">
+                class="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full md:opacity-0 md:group-hover:opacity-100">
             <i class="fas fa-times text-xs"></i>
         </button>
     `;
